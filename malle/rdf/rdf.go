@@ -1,74 +1,159 @@
 package rdf
 
 import (
-	"bytes"
+	"errors"
 	"fmt"
+	"strconv"
 )
 
 var (
-	rdfLangString = NewIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString")
+	RDFLangString   = IRI{"http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"}
+	RDFHTML         = IRI{"http://www.w3.org/1999/02/22-rdf-syntax-ns#HTML"}
+	RDFXMLLiteral   = IRI{"http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral"}
+	XSDString       = IRI{"http://www.w3.org/2001/XMLSchema#string"}       // string
+	XSDBoolean      = IRI{"http://www.w3.org/2001/XMLSchema#boolean"}      // boolean
+	XSDDecimal      = IRI{"http://www.w3.org/2001/XMLSchema#decimal"}      // big.Decimal
+	XSDInteger      = IRI{"http://www.w3.org/2001/XMLSchema#integer"}      // big.Int
+	XSDLong         = IRI{"http://www.w3.org/2001/XMLSchema#long"}         // int64
+	XSDUnsignedLong = IRI{"http://www.w3.org/2001/XMLSchema#unsignedLong"} // uint64
+	// ...
+	// TODO all RDF-compatible xsd datatypes
 )
 
+var (
+	ErrUndecodable    = errors.New("rdf: cannot decode bytes into Term")
+	ErrInvalidIRI     = errors.New("rdf: invalid IRI: cannot be empty")
+	ErrInvalidLiteral = errors.New("rdf: invalid Literal: cannot be empty")
+)
+
+// Term represents a RDF Term
 type Term interface {
-	Bytes() []byte
-	String() string // in N-triples format.
+	// Encode returns a byte representation of a term.
+	Encode() []byte
+
+	// NT returns a string representation of a Term in N-Triples format.
+	NT() string
 }
 
-// TODO move this logic to db?
-func ReadTerm(b []byte) (Term, error) {
-	if b[0] == '0' {
-		// IRI
-		return IRI{val: b[1:]}, nil
-	} else {
-		// Literal
+// DecodeTerm decodes a byte-serialzed term into a Term.
+func DecodeTerm(b []byte) (Term, error) {
+	if b == nil || len(b) < 2 {
+		return nil, ErrUndecodable
 	}
-	return nil, fmt.Errorf("cannot parse Term from %q", b)
+	switch b[0] {
+	// IRI
+	case 0x00:
+		return IRI{string(b[1:])}, nil
+	// rdf:langString
+	case 0x01:
+		if len(b) <= 2 || len(b) < int(b[1])+1 {
+			return nil, ErrUndecodable
+		}
+		if int(b[1]) == 0 {
+			// an empty language tag - consider it an xsd:String
+			return Literal{
+				val:      string(b[2:]),
+				dataType: XSDString,
+			}, nil
+		}
+		return Literal{
+			val:      string(b[(2 + int(b[1])):]),
+			lang:     string(b[2:(2 + int(b[1]))]),
+			dataType: RDFLangString,
+		}, nil
+	// xsd:String
+	case 0x02:
+		return Literal{
+			val:      string(b[1:]),
+			dataType: XSDString,
+		}, nil
+	// Other typed literals
+	case 0xFF:
+		ll := int(b[1]) + 2
+		return Literal{
+			val:      string(b[ll:]),
+			dataType: IRI{string(b[2:ll])},
+		}, nil
+	default:
+		panic("TODO")
+	}
 }
 
+// TermsEq tests for term equality.
 func TermsEq(a, b Term) bool {
-	return bytes.Equal(a.Bytes(), b.Bytes())
+	return a != nil && b != nil && a.NT() == b.NT()
 }
 
+// IRI represents a IRI resource.
 type IRI struct {
-	val []byte
+	val string
 }
 
-func NewIRI(s string) IRI {
-	return IRI{val: []byte(s)}
+func NewIRI(iri string) (IRI, error) {
+	if len(iri) == 0 {
+		return IRI{}, ErrInvalidIRI
+	}
+	return IRI{val: iri}, nil
 }
 
-func (u IRI) Bytes() []byte {
-	return u.val
+func (i IRI) Encode() []byte {
+	b := make([]byte, len(i.val)+1)
+	b[0] = 0x00
+	copy(b[1:], []byte(i.val))
+	return b
 }
 
-func (u IRI) String() string {
-	return fmt.Sprintf("<%s>", string(u.val))
+func (i IRI) NT() string {
+	return fmt.Sprintf("<%s>", i.val)
 }
 
 type Literal struct {
-	langLength uint8
-	val        []byte
-	dataType   IRI
+	val      string
+	lang     string
+	dataType IRI
 }
 
-func NewLangLiteral(val string, lang string) Literal {
-	b := make([]byte, len(val)+len(lang))
-	copy([]byte(lang), b)
-	copy([]byte(val), b[len(lang):])
-	return Literal{
-		langLength: uint8(len(lang)),
-		val:        b,
-		dataType:   rdfLangString,
+func NewLiteral(val interface{}) (Literal, error) {
+	switch t := val.(type) {
+	case string:
+		if len(t) == 0 {
+			return Literal{}, ErrInvalidLiteral
+		}
+		return Literal{val: t, dataType: XSDString}, nil
+	case int:
+		return Literal{val: strconv.Itoa(t), dataType: XSDLong}, nil
+	case uint:
+		return Literal{val: strconv.FormatUint(uint64(t), 10), dataType: XSDUnsignedLong}, nil
 	}
+	panic("NewLiteral: TODO")
 }
 
-//func NewLiteral(val interface{}) Literal {}
+// If lang is empty, the Literal will be typed as xsd:String
+func NewLangLiteral(val string, lang string) (Literal, error) {
+	if len(val) == 0 {
+		return Literal{}, ErrInvalidLiteral
+	}
+	if len(lang) == 0 {
+		return Literal{
+			val:      val,
+			dataType: XSDString,
+		}, nil
+	}
+	return Literal{
+		val:      val,
+		lang:     lang,
+		dataType: RDFLangString,
+	}, nil
+}
 
-func NewTypedLiteral(val []byte, typ IRI) Literal {
+func NewTypedLiteral(val string, typ IRI) (Literal, error) {
+	if len(val) == 0 {
+		return Literal{}, ErrInvalidLiteral
+	}
 	return Literal{
 		val:      val,
 		dataType: typ,
-	}
+	}, nil
 }
 
 func (l Literal) DataType() IRI {
@@ -76,22 +161,55 @@ func (l Literal) DataType() IRI {
 }
 
 func (l Literal) Lang() string {
-	return string(l.val[:l.langLength])
+	return l.lang
 }
 
-func (l Literal) String() string {
-	if l.langLength > 0 {
-		return fmt.Sprintf("\"%s\"@%s",
-			string(l.val[l.langLength:]),
-			string(l.val[:l.langLength]))
+func (l Literal) NT() string {
+	if l.lang != "" {
+		return fmt.Sprintf("\"%s\"@%s", l.val, l.lang)
+	} else if TermsEq(l.DataType(), XSDString) {
+		return fmt.Sprintf("\"%s\"", l.val)
 	}
-	return fmt.Sprintf("\"%s\"^^%s", string(l.val), l.dataType.String())
+	return fmt.Sprintf("\"%s\"^^%s", l.val, l.dataType.NT())
 }
 
+func (l Literal) Encode() []byte {
+	switch l.DataType() {
+	case RDFLangString:
+		b := make([]byte, len(l.val)+len(l.lang)+2)
+		b[0] = 0x01
+		ll := len(l.lang)
+		b[1] = uint8(ll)
+		copy(b[2:], []byte(l.lang))
+		copy(b[2+ll:], []byte(l.val))
+		return b
+	case XSDString:
+		b := make([]byte, len(l.val)+1)
+		b[0] = 0x02
+		copy(b[1:], []byte(l.val))
+		return b
+	default:
+		b := make([]byte, len(l.val)+len(l.DataType().val)+2)
+		b[0] = 0xFF
+		b[1] = uint8(len(l.DataType().val))
+		copy(b[2:], []byte(l.DataType().val))
+		copy(b[len(l.DataType().val)+2:], []byte(l.val))
+		return b
+	}
+}
+
+// AsGoType returns the literal in a corresponding Go type.
 //func (l Literal) AsGoType() interface{}
 
 type Triple struct {
 	Subj IRI
 	Pred IRI
 	Obj  Term
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
