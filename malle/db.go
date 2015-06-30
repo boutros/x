@@ -78,7 +78,7 @@ var (
 
 // Store is a RDF triple store backed by a key-value store (boltdb).
 type Store struct {
-	*bolt.DB
+	kv *bolt.DB
 }
 
 // Public API -----------------------------------------------------------------
@@ -90,20 +90,20 @@ func Init(file string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Store{db}
+	s := &Store{kv: db}
 	return s.setup()
 }
 
 // Close closes the datastore, relasing the lock on the database file.
 func (db *Store) Close() error {
-	return db.DB.Close()
+	return db.kv.Close()
 }
 
 // AddTerm stores a rdf.Term in the database and returns the id it has been given.
 // If the term allready is stored, it will simply return the id.
 func (db *Store) AddTerm(term rdf.Term) (uint32, error) {
 	var id uint32
-	err := db.Update(func(tx *bolt.Tx) error {
+	err := db.kv.Update(func(tx *bolt.Tx) error {
 		if i, err := db.getID(tx, term); err == nil {
 			// Term is allready in database, return it's id
 			id = i
@@ -135,7 +135,7 @@ func (db *Store) AddTerm(term rdf.Term) (uint32, error) {
 // HasTerm checks if the given term is stored.
 func (db *Store) HasTerm(term rdf.Term) (bool, error) {
 	found := false
-	err := db.View(func(tx *bolt.Tx) error {
+	err := db.kv.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(bIdxTerms)
 		id := bkt.Get(db.encode(term))
 		if id != nil {
@@ -149,7 +149,7 @@ func (db *Store) HasTerm(term rdf.Term) (bool, error) {
 // GetTerm returns the term for a given ID.
 func (db *Store) GetTerm(id uint32) (rdf.Term, error) {
 	var term rdf.Term
-	err := db.View(func(tx *bolt.Tx) error {
+	err := db.kv.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(bTerms)
 		b := bkt.Get(u32tob(id))
 		if b == nil {
@@ -163,7 +163,7 @@ func (db *Store) GetTerm(id uint32) (rdf.Term, error) {
 
 // GetID returns the ID of a given term.
 func (db *Store) GetID(term rdf.Term) (id uint32, err error) {
-	err = db.View(func(tx *bolt.Tx) error {
+	err = db.kv.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(bIdxTerms)
 		b := bkt.Get(db.encode(term))
 		if b == nil {
@@ -195,7 +195,7 @@ type Query struct {
 
 // setup makes sure the database has all the needed buckets and predefined values
 func (db *Store) setup() (*Store, error) {
-	err := db.Update(func(tx *bolt.Tx) error {
+	err := db.kv.Update(func(tx *bolt.Tx) error {
 		for _, b := range [][]byte{bTerms, bIdxTerms, bDT, bIdxDT} {
 			_, err := tx.CreateBucketIfNotExists(b)
 			if err != nil {
