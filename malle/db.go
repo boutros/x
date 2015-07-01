@@ -175,10 +175,30 @@ func (db *Store) GetID(term rdf.Term) (id uint32, err error) {
 	return id, err
 }
 
+// RemoveTerm removes a rdf.Term from the triple store.
+func (db *Store) RemoveTerm(term rdf.Term) error {
+	err := db.kv.Update(func(tx *bolt.Tx) error {
+		bt := db.encode(term)
+		bkt := tx.Bucket(bIdxTerms)
+		id := bkt.Get(bt)
+		if id == nil {
+			return ErrNotFound
+		}
+		err := bkt.Delete(bt)
+		if err != nil {
+			return err
+		}
+		bkt = tx.Bucket(bTerms)
+		err = bkt.Delete(id)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return err
+}
+
 /*
-
-func (db *Store) RemoveTerm(rdf.Term) error      {}
-
 func (db *Store) AddTriple(rdf.Triple) error         {}
 func (db *Store) RemoveTriple(rdf.Triple) error      {}
 func (db *Store) HasTriple(rdf.Triple) (bool, error) {}

@@ -10,7 +10,7 @@ import (
 
 const (
 	seed    = 0x123
-	numIter = 10 // number of random iterations for storing/retrieving tests
+	numIter = 3 // number of random iterations for storing/retrieving tests
 )
 
 var (
@@ -179,6 +179,35 @@ func TestStoreTerm(t *testing.T) {
 
 		if id2 != id {
 			t.Errorf("Store.AddTerm(%v)) stored exisiting term as a new term", term)
+		}
+	}
+}
+
+func TestRemoveTerm(t *testing.T) {
+	for i := 0; i < numIter; i++ {
+		term := genRandTerm()
+		_, err := testDB.AddTerm(term)
+		if err != nil {
+			t.Fatalf("Store.AddTerm(%v)) == %v, want no error", term, err)
+		}
+
+		err = testDB.RemoveTerm(term)
+		if err != nil {
+			t.Fatalf("Store.RemoveTerm(%v)) == %v, want no error", term, err)
+		}
+
+		err = testDB.RemoveTerm(term)
+		if err != ErrNotFound {
+			t.Fatalf("Store.RemoveTerm(%v)) == %v, want no ErrNotFound", term, err)
+		}
+
+		stored, err := testDB.HasTerm(term)
+		if err != nil {
+			t.Fatalf("Store.HasTerm(%v) == %v, want no error", term, err)
+		}
+
+		if stored {
+			t.Fatalf("Store.RemoveTerm(%v) didn't remove term from database", term)
 		}
 	}
 }
