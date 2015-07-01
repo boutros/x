@@ -121,12 +121,13 @@ func (db *Store) AddTerm(term rdf.Term) (uint32, error) {
 		// TODO err if id > max uint32 = 4294967295
 		id = uint32(n)
 		idb := u32tob(uint32(n))
-		err = bkt.Put(idb, db.encode(term))
+		bt := db.encode(term)
+		err = bkt.Put(idb, bt)
 		if err != nil {
 			return err
 		}
 		bkt = tx.Bucket(bIdxTerms)
-		err = bkt.Put(db.encode(term), idb)
+		err = bkt.Put(bt, idb)
 		return err
 	})
 	return id, err
