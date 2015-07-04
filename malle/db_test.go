@@ -151,12 +151,12 @@ func TestStoreTerm(t *testing.T) {
 		term := genRandTerm()
 		id, err := testDB.AddTerm(term)
 		if err != nil {
-			t.Fatalf("Store.AddTerm(%v)) == %v, want no error", term, err)
+			t.Fatalf("Store.AddTerm(%v)) == %v; want no error", term, err)
 		}
 
 		stored, err := testDB.HasTerm(term)
 		if err != nil {
-			t.Fatalf("Store.HasTerm(%v) == %v, want no error", term, err)
+			t.Fatalf("Store.HasTerm(%v) == %v; want no error", term, err)
 		}
 
 		if !stored {
@@ -165,7 +165,7 @@ func TestStoreTerm(t *testing.T) {
 
 		want, err := testDB.GetTerm(id)
 		if err != nil {
-			t.Fatalf("Store.GetTerm(%v)) == %v, want no error", id, err)
+			t.Fatalf("Store.GetTerm(%v)) == %v; want no error", id, err)
 		}
 
 		if !rdf.TermsEq(term, want) {
@@ -174,7 +174,7 @@ func TestStoreTerm(t *testing.T) {
 
 		id2, err := testDB.AddTerm(term)
 		if err != nil {
-			t.Fatalf("Store.AddTerm(%v)) == %v, want no error", term, err)
+			t.Fatalf("Store.AddTerm(%v)) == %v; want no error", term, err)
 		}
 
 		if id2 != id {
@@ -188,26 +188,47 @@ func TestRemoveTerm(t *testing.T) {
 		term := genRandTerm()
 		_, err := testDB.AddTerm(term)
 		if err != nil {
-			t.Fatalf("Store.AddTerm(%v)) == %v, want no error", term, err)
+			t.Fatalf("Store.AddTerm(%v)) == %v; want no error", term, err)
 		}
 
 		err = testDB.RemoveTerm(term)
 		if err != nil {
-			t.Fatalf("Store.RemoveTerm(%v)) == %v, want no error", term, err)
+			t.Fatalf("Store.RemoveTerm(%v)) == %v; want no error", term, err)
 		}
 
 		err = testDB.RemoveTerm(term)
 		if err != ErrNotFound {
-			t.Fatalf("Store.RemoveTerm(%v)) == %v, want no ErrNotFound", term, err)
+			t.Fatalf("Store.RemoveTerm(%v)) == %v; want no ErrNotFound", term, err)
 		}
 
 		stored, err := testDB.HasTerm(term)
 		if err != nil {
-			t.Fatalf("Store.HasTerm(%v) == %v, want no error", term, err)
+			t.Fatalf("Store.HasTerm(%v) == %v; want no error", term, err)
 		}
 
 		if stored {
 			t.Fatalf("Store.RemoveTerm(%v) didn't remove term from database", term)
 		}
+	}
+}
+
+func TestAddTriple(t *testing.T) {
+	tr1 := rdf.NewTriple(mustNewIRI("a"), mustNewIRI("p"), mustNewLiteral("o"))
+	//tr2 := rdf.NewTriple(mustNewIRI("a"), mustNewIRI("p"), mustNewLiteral("o2"))
+	//tr3 := rdf.NewTriple(mustNewIRI("a"), mustNewIRI("p2"), mustNewLiteral("o"))
+
+	exists, err := testDB.HasTriple(tr1)
+	if err != nil || exists {
+		t.Fatalf("Store.HasTriple(%v) == %v, %v; want false, nil", tr1, exists, err)
+	}
+
+	err = testDB.AddTriple(tr1)
+	if err != nil {
+		t.Fatalf("Store.AddTriple(%v) == %v; want no error", tr1, err)
+	}
+
+	exists, err = testDB.HasTriple(tr1)
+	if err != nil || !exists {
+		t.Fatalf("Store.HasTriple(%v) == %v, %v; want true, nil", tr1, exists, err)
 	}
 }

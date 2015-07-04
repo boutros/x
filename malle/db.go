@@ -1,12 +1,14 @@
 package malle
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"log"
 
 	"github.com/boltdb/bolt"
 	"github.com/boutros/x/malle/rdf"
+	"github.com/tgruben/roaring"
 )
 
 const (
@@ -16,10 +18,11 @@ const (
 
 // buckets in the key-value store
 var (
-	bTerms    = []byte("terms")
-	bIdxTerms = []byte("iterms")
-	bDT       = []byte("dt")
-	bIdxDT    = []byte("idt")
+	bTerms    = []byte("terms")  // uint32 -> term
+	bIdxTerms = []byte("iterms") // term -> uint32
+	bDT       = []byte("dt")     // uint32 -> iri
+	bIdxDT    = []byte("idt")    // iri -> uint32
+	bSPO      = []byte("spo")    // SP -> bitmap of O
 )
 
 // datatypes are the built in datatypes (IDs 0 through 41).
@@ -101,33 +104,9 @@ func (db *Store) Close() error {
 
 // AddTerm stores a rdf.Term in the database and returns the id it has been given.
 // If the term allready is stored, it will simply return the id.
-func (db *Store) AddTerm(term rdf.Term) (uint32, error) {
-	var id uint32
-	err := db.kv.Update(func(tx *bolt.Tx) error {
-		if i, err := db.getID(tx, term); err == nil {
-			// Term is allready in database, return it's id
-			id = i
-			return nil
-		} else if err != ErrNotFound {
-			// Some other IO error occured
-			return err
-		}
-		bkt := tx.Bucket(bTerms)
-		n, err := bkt.NextSequence()
-		if err != nil {
-			log.Println(err)
-			return ErrDBFailure
-		}
-		// TODO err if id > max uint32 = 4294967295
-		id = uint32(n)
-		idb := u32tob(uint32(n))
-		bt := db.encode(term)
-		err = bkt.Put(idb, bt)
-		if err != nil {
-			return err
-		}
-		bkt = tx.Bucket(bIdxTerms)
-		err = bkt.Put(bt, idb)
+func (db *Store) AddTerm(term rdf.Term) (id uint32, err error) {
+	err = db.kv.Update(func(tx *bolt.Tx) error {
+		id, err = db.addTerm(tx, term)
 		return err
 	})
 	return id, err
@@ -165,13 +144,8 @@ func (db *Store) GetTerm(id uint32) (rdf.Term, error) {
 // GetID returns the ID of a given term.
 func (db *Store) GetID(term rdf.Term) (id uint32, err error) {
 	err = db.kv.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(bIdxTerms)
-		b := bkt.Get(db.encode(term))
-		if b == nil {
-			return ErrNotFound
-		}
-		id = btou32(b)
-		return nil
+		id, err = db.getID(tx, term)
+		return err
 	})
 	return id, err
 }
@@ -199,10 +173,76 @@ func (db *Store) RemoveTerm(term rdf.Term) error {
 	return err
 }
 
+// AddTriple stores the given Triple.
+func (db *Store) AddTriple(tr rdf.Triple) error {
+	err := db.kv.Update(func(tx *bolt.Tx) error {
+		sID, err := db.addTerm(tx, tr.Subject())
+		if err != nil {
+			return err
+		}
+
+		pID, err := db.addTerm(tx, tr.Predicate())
+		if err != nil {
+			return err
+		}
+
+		oID, err := db.addTerm(tx, tr.Object())
+		if err != nil {
+			return err
+		}
+
+		return db.storeTriple(tx, sID, pID, oID)
+	})
+	return err
+}
+
+// HasTriple checks if the given Triple is stored.
+func (db *Store) HasTriple(tr rdf.Triple) (exists bool, err error) {
+	err = db.kv.View(func(tx *bolt.Tx) error {
+		sID, err := db.getID(tx, tr.Subject())
+		if err == ErrNotFound {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		pID, err := db.getID(tx, tr.Predicate())
+		if err == ErrNotFound {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		oID, err := db.getID(tx, tr.Object())
+		if err == ErrNotFound {
+			return nil
+		} else if err != nil {
+			return err
+		}
+
+		bkt := tx.Bucket(bSPO)
+
+		sp := make([]byte, 8)
+		copy(sp, u32tob(sID))
+		copy(sp[4:], u32tob(pID))
+
+		bitmap := roaring.NewRoaringBitmap()
+		bo := bkt.Get(sp)
+		if bo == nil {
+			return nil
+		}
+
+		_, err = bitmap.ReadFrom(bytes.NewReader(bo))
+		if err != nil {
+			return err
+		}
+
+		exists = bitmap.Contains(oID)
+		return nil
+	})
+	return exists, err
+}
+
 /*
-func (db *Store) AddTriple(rdf.Triple) error         {}
 func (db *Store) RemoveTriple(rdf.Triple) error      {}
-func (db *Store) HasTriple(rdf.Triple) (bool, error) {}
 
 type Query struct {
 	err  error
@@ -217,7 +257,7 @@ type Query struct {
 // setup makes sure the database has all the needed buckets and predefined values
 func (db *Store) setup() (*Store, error) {
 	err := db.kv.Update(func(tx *bolt.Tx) error {
-		for _, b := range [][]byte{bTerms, bIdxTerms, bDT, bIdxDT} {
+		for _, b := range [][]byte{bTerms, bIdxTerms, bDT, bIdxDT, bSPO} {
 			_, err := tx.CreateBucketIfNotExists(b)
 			if err != nil {
 				return err
@@ -267,7 +307,57 @@ func (db *Store) getID(tx *bolt.Tx, term rdf.Term) (id uint32, err error) {
 	return id, err
 }
 
-// func (db *Store) decode([]byte]) rdf.Term {}
+// addTerm works like the exported AddTerm, but using the given transaction.
+func (db *Store) addTerm(tx *bolt.Tx, term rdf.Term) (id uint32, err error) {
+	if id, err = db.getID(tx, term); err == nil {
+		// Term is allready in database
+		return id, nil
+	} else if err != ErrNotFound {
+		// Some other IO error occured
+		return uint32(0), err
+	}
+	bkt := tx.Bucket(bTerms)
+	n, err := bkt.NextSequence()
+	if err != nil {
+		log.Println(err)
+		return uint32(0), ErrDBFailure
+	}
+	// TODO err if id > max uint32 = 4294967295
+	id = uint32(n)
+	idb := u32tob(uint32(n))
+	bt := db.encode(term)
+	err = bkt.Put(idb, bt)
+	if err != nil {
+		return uint32(0), err
+	}
+	bkt = tx.Bucket(bIdxTerms)
+	err = bkt.Put(bt, idb)
+	return id, err
+}
+
+func (db *Store) storeTriple(tx *bolt.Tx, s, p, o uint32) error {
+	bkt := tx.Bucket(bSPO)
+
+	sp := make([]byte, 8)
+	copy(sp, u32tob(s))
+	copy(sp[4:], u32tob(p))
+
+	bitmap := roaring.NewRoaringBitmap()
+	bo := bkt.Get(sp)
+	if bo != nil {
+		_, err := bitmap.ReadFrom(bytes.NewReader(bo))
+		if err != nil {
+			return err
+		}
+	}
+	bitmap.Add(o)
+	var b bytes.Buffer
+	_, err := bitmap.WriteTo(&b)
+	if err != nil {
+		return err
+	}
+	return bkt.Put(sp, b.Bytes())
+}
 
 /*
 func (db *Store) hasTerm(tx *bolt.Tx, rdf.Term) (bool, error) {}

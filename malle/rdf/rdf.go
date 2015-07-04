@@ -12,7 +12,7 @@ var (
 	RDFXMLLiteral   = IRI{"http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral"}
 	XSDString       = IRI{"http://www.w3.org/2001/XMLSchema#string"}       // string
 	XSDBoolean      = IRI{"http://www.w3.org/2001/XMLSchema#boolean"}      // boolean
-	XSDDecimal      = IRI{"http://www.w3.org/2001/XMLSchema#decimal"}      // big.Decimal
+	XSDDecimal      = IRI{"http://www.w3.org/2001/XMLSchema#decimal"}      // big.Float
 	XSDInteger      = IRI{"http://www.w3.org/2001/XMLSchema#integer"}      // big.Int
 	XSDLong         = IRI{"http://www.w3.org/2001/XMLSchema#long"}         // int64
 	XSDUnsignedLong = IRI{"http://www.w3.org/2001/XMLSchema#unsignedLong"} // uint64
@@ -201,10 +201,37 @@ func (l Literal) Encode() []byte {
 // AsGoType returns the literal in a corresponding Go type.
 //func (l Literal) AsGoType() interface{}
 
+// Triple represents a RDF statement with subject, predicate and object
 type Triple struct {
-	Subj IRI
-	Pred IRI
-	Obj  Term
+	subj IRI
+	pred IRI
+	obj  Term
+}
+
+// NewTriple returns a triple with the given subject, predicate and object.
+func NewTriple(s IRI, p IRI, o Term) Triple {
+	return Triple{
+		subj: s,
+		pred: p,
+		obj:  o,
+	}
+}
+
+func (t Triple) Subject() IRI {
+	return t.subj
+}
+
+func (t Triple) Predicate() IRI {
+	return t.pred
+}
+
+func (t Triple) Object() Term {
+	return t.obj
+}
+
+// NT returns an N-triples serialization of the Triple.
+func (t Triple) NT() string {
+	return fmt.Sprintf("%s %s %s .", t.subj.NT(), t.pred.NT(), t.obj.NT())
 }
 
 func min(a, b int) int {
