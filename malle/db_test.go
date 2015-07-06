@@ -213,22 +213,71 @@ func TestRemoveTerm(t *testing.T) {
 }
 
 func TestAddTriple(t *testing.T) {
-	tr1 := rdf.NewTriple(mustNewIRI("a"), mustNewIRI("p"), mustNewLiteral("o"))
-	//tr2 := rdf.NewTriple(mustNewIRI("a"), mustNewIRI("p"), mustNewLiteral("o2"))
-	//tr3 := rdf.NewTriple(mustNewIRI("a"), mustNewIRI("p2"), mustNewLiteral("o"))
+	tr := rdf.NewTriple(mustNewIRI("a"), mustNewIRI("p"), mustNewLiteral("o"))
 
-	exists, err := testDB.HasTriple(tr1)
+	exists, err := testDB.HasTriple(tr)
 	if err != nil || exists {
-		t.Fatalf("Store.HasTriple(%v) == %v, %v; want false, nil", tr1, exists, err)
+		t.Fatalf("Store.HasTriple(%v) == %v, %v; want false, nil", tr, exists, err)
 	}
 
-	err = testDB.AddTriple(tr1)
+	err = testDB.AddTriple(tr)
+	if err != nil {
+		t.Fatalf("Store.AddTriple(%v) == %v; want no error", tr, err)
+	}
+
+	exists, err = testDB.HasTriple(tr)
+	if err != nil || !exists {
+		t.Fatalf("Store.HasTriple(%v) == %v, %v; want true, nil", tr, exists, err)
+	}
+}
+
+func TestStats(t *testing.T) {
+	tr1 := rdf.NewTriple(mustNewIRI("A"), mustNewIRI("P"), mustNewLiteral("O"))
+	tr2 := rdf.NewTriple(mustNewIRI("A"), mustNewIRI("P"), mustNewLiteral("O2"))
+	tr3 := rdf.NewTriple(mustNewIRI("A"), mustNewIRI("P2"), mustNewLiteral("O"))
+
+	startStats := testDB.Stats()
+
+	err := testDB.AddTriple(tr1)
 	if err != nil {
 		t.Fatalf("Store.AddTriple(%v) == %v; want no error", tr1, err)
 	}
 
-	exists, err = testDB.HasTriple(tr1)
-	if err != nil || !exists {
-		t.Fatalf("Store.HasTriple(%v) == %v, %v; want true, nil", tr1, exists, err)
+	stats := testDB.Stats()
+	if stats.NumTerms != startStats.NumTerms+3 {
+		t.Fatalf("Store.Stats().NumTerms == %d; want %d", stats.NumTerms, startStats.NumTerms+3)
+	}
+	if stats.NumTriples != startStats.NumTriples+1 {
+		t.Fatalf("Store.Stats().NumTriples == %d; want %d", stats.NumTriples, startStats.NumTriples+1)
+	}
+	startStats = stats
+
+	err = testDB.AddTriple(tr2)
+	if err != nil {
+		t.Fatalf("Store.AddTriple(%v) == %v; want no error", tr2, err)
+	}
+	stats = testDB.Stats()
+	if stats.NumTerms != startStats.NumTerms+1 {
+		t.Fatalf("Store.Stats().NumTerms == %d; want %d", stats.NumTerms, startStats.NumTerms+1)
+	}
+	if stats.NumTriples != startStats.NumTriples+1 {
+		t.Fatalf("Store.Stats().NumTriples == %d; want %d", stats.NumTriples, startStats.NumTriples+1)
+	}
+	startStats = stats
+
+	err = testDB.AddTriple(tr3)
+	if err != nil {
+		t.Fatalf("Store.AddTriple(%v) == %v; want no error", tr3, err)
+	}
+	err = testDB.AddTriple(tr3)
+	if err != nil {
+		t.Fatalf("Store.AddTriple(%v) == %v; want no error", tr3, err)
+	}
+	stats = testDB.Stats()
+	if stats.NumTerms != startStats.NumTerms+1 {
+		t.Fatalf("Store.Stats().NumTerms == %d; want %d", stats.NumTerms, startStats.NumTerms+1)
+	}
+	if stats.NumTriples != startStats.NumTriples+1 {
+		t.Fatalf("Store.Stats().NumTriples == %d; want %d", stats.NumTriples, startStats.NumTriples+1)
 	}
 }

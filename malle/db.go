@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"log"
+	"sync/atomic"
 
 	"github.com/boltdb/bolt"
 	"github.com/boutros/x/malle/rdf"
@@ -82,6 +83,15 @@ var (
 // Store is a RDF triple store backed by a key-value store (boltdb).
 type Store struct {
 	kv *bolt.DB
+
+	numTr uint32 // number of triples stored
+}
+
+// Stats holds some statistics of the triple store.
+type Stats struct {
+	NumTerms   int
+	NumTriples int
+	// SizeInBytes int
 }
 
 // Public API -----------------------------------------------------------------
@@ -100,6 +110,19 @@ func Init(file string) (*Store, error) {
 // Close closes the datastore, relasing the lock on the database file.
 func (db *Store) Close() error {
 	return db.kv.Close()
+}
+
+// Stats return statistics about the triple store.
+func (db *Store) Stats() Stats {
+	st := Stats{}
+	db.kv.View(func(tx *bolt.Tx) error {
+		bkt := tx.Bucket(bTerms)
+		st.NumTerms = bkt.Stats().KeyN
+		bkt = tx.Bucket(bSPO)
+		st.NumTriples = int(atomic.LoadUint32(&db.numTr))
+		return nil
+	})
+	return st
 }
 
 // AddTerm stores a rdf.Term in the database and returns the id it has been given.
@@ -257,6 +280,7 @@ type Query struct {
 // setup makes sure the database has all the needed buckets and predefined values
 func (db *Store) setup() (*Store, error) {
 	err := db.kv.Update(func(tx *bolt.Tx) error {
+		// Make sure all the required buckets are created
 		for _, b := range [][]byte{bTerms, bIdxTerms, bDT, bIdxDT, bSPO} {
 			_, err := tx.CreateBucketIfNotExists(b)
 			if err != nil {
@@ -275,6 +299,22 @@ func (db *Store) setup() (*Store, error) {
 			}
 			i++
 		}
+
+		// Count number of triples
+		bkt = tx.Bucket(bSPO)
+		cur = bkt.Cursor()
+		bitmap := roaring.NewRoaringBitmap()
+		var n uint64
+		for k, v := cur.First(); k != nil; k, v = cur.Next() {
+			if v != nil {
+				_, err := bitmap.ReadFrom(bytes.NewReader(v))
+				if err != nil {
+					return err
+				}
+				n += bitmap.GetCardinality()
+			} // else ?
+		}
+		db.numTr = uint32(n)
 
 		return nil
 	})
@@ -350,11 +390,14 @@ func (db *Store) storeTriple(tx *bolt.Tx, s, p, o uint32) error {
 			return err
 		}
 	}
-	bitmap.Add(o)
+	newTriple := bitmap.CheckedAdd(o)
 	var b bytes.Buffer
 	_, err := bitmap.WriteTo(&b)
 	if err != nil {
 		return err
+	}
+	if newTriple {
+		atomic.AddUint32(&db.numTr, 1)
 	}
 	return bkt.Put(sp, b.Bytes())
 }
