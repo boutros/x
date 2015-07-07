@@ -291,15 +291,6 @@ func (db *Store) HasTriple(tr rdf.Triple) (exists bool, err error) {
 	return exists, err
 }
 
-/*
-type Query struct {
-	err  error
-	subj rdf.IRI
-}
-
-//res, err := db.Query().WhereSubj(rdf.Term...).Limit(10)
-*/
-
 // Unexported methods ---------------------------------------------------------
 
 // setup makes sure the database has all the needed buckets and predefined values
@@ -531,11 +522,6 @@ func (db *Store) removeTriple(tx *bolt.Tx, s, p, o uint32) error {
 	return nil
 
 }
-
-/*
-func (db *Store) hasTerm(tx *bolt.Tx, rdf.Term) (bool, error) {}
-func (db *Store) getID(tx )
-*/
 
 // Helper functions -----------------------------------------------------------
 
