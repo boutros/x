@@ -231,6 +231,69 @@ func TestAddTriple(t *testing.T) {
 	}
 }
 
+func TestRemoveTriple(t *testing.T) {
+	tr1 := rdf.NewTriple(mustNewIRI("s1"), mustNewIRI("p1"), mustNewLiteral("o1"))
+	tr2 := rdf.NewTriple(mustNewIRI("s1"), mustNewIRI("p1"), mustNewLiteral("o2"))
+	tr3 := rdf.NewTriple(mustNewIRI("s1"), mustNewIRI("p2"), mustNewLiteral("o1"))
+	tr4 := rdf.NewTriple(mustNewIRI("s100"), mustNewIRI("p100"), mustNewLiteral("o100"))
+
+	for _, tr := range []rdf.Triple{tr1, tr2, tr3} {
+		err := testDB.AddTriple(tr)
+		if err != nil {
+			t.Fatalf("Store.AddTriple(%v) == %v; want no error", tr, err)
+		}
+	}
+
+	startStats := testDB.Stats()
+
+	err := testDB.RemoveTriple(tr3)
+	if err != nil {
+		t.Fatalf("Store.RemoveTriple(%v) == %v; want no error", tr3, err)
+	}
+
+	stats := testDB.Stats()
+	if stats.NumTriples != startStats.NumTriples-1 {
+		t.Fatalf("Store.Stats().NumTriples == %d; want %d", stats.NumTriples, startStats.NumTriples-1)
+	}
+	if stats.NumTerms != startStats.NumTerms-1 {
+		t.Fatalf("Store.Stats().NumTerms == %d; want %d", stats.NumTerms, startStats.NumTerms-1)
+	}
+	startStats = stats
+
+	err = testDB.RemoveTriple(tr1)
+	if err != nil {
+		t.Fatalf("Store.RemoveTriple(%v) == %v; want no error", tr1, err)
+	}
+
+	stats = testDB.Stats()
+	if stats.NumTriples != startStats.NumTriples-1 {
+		t.Fatalf("Store.Stats().NumTriples == %d; want %d", stats.NumTriples, startStats.NumTriples-1)
+	}
+	if stats.NumTerms != startStats.NumTerms-1 {
+		t.Fatalf("Store.Stats().NumTerms == %d; want %d", stats.NumTerms, startStats.NumTerms-1)
+	}
+	startStats = stats
+
+	err = testDB.RemoveTriple(tr2)
+	if err != nil {
+		t.Fatalf("Store.RemoveTriple(%v) == %v; want no error", tr2, err)
+	}
+
+	stats = testDB.Stats()
+	if stats.NumTriples != startStats.NumTriples-1 {
+		t.Fatalf("Store.Stats().NumTriples == %d; want %d", stats.NumTriples, startStats.NumTriples-1)
+	}
+	if stats.NumTerms != startStats.NumTerms-3 {
+		t.Fatalf("Store.Stats().NumTerms == %d; want %d", stats.NumTerms, startStats.NumTerms-3)
+	}
+
+	err = testDB.RemoveTriple(tr4)
+	if err != ErrNotFound {
+		t.Fatalf("Store.RemoveTriple(%v) == %v; want ErrNotFound", tr2, err)
+	}
+
+}
+
 func TestStats(t *testing.T) {
 	tr1 := rdf.NewTriple(mustNewIRI("A"), mustNewIRI("P"), mustNewLiteral("O"))
 	tr2 := rdf.NewTriple(mustNewIRI("A"), mustNewIRI("P"), mustNewLiteral("O2"))
