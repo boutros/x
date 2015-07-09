@@ -19,13 +19,15 @@ const (
 
 // buckets in the key-value store
 var (
+	// Terms:
 	bTerms    = []byte("terms")  // uint32 -> term
 	bIdxTerms = []byte("iterms") // term -> uint32
 	bDT       = []byte("dt")     // uint32 -> iri
 	bIdxDT    = []byte("idt")    // iri -> uint32
-	bSPO      = []byte("spo")    // SP -> bitmap of O
-	bOPS      = []byte("ops")    // OP -> bitmap of S
-	//bPOS      = []byte("pos")    // PO -> bitmap of S
+	// Triple indices:
+	bSPO = []byte("spo") // Subect + Predicate -> bitmap of Object
+	bOSP = []byte("osp") // Object + Subject   -> bitmap of Predicate
+	bPOS = []byte("pos") // PredicateO + bject -> bitmap of Subject
 )
 
 // datatypes are the built in datatypes (IDs 0 through 41).
@@ -297,7 +299,7 @@ func (db *Store) HasTriple(tr rdf.Triple) (exists bool, err error) {
 func (db *Store) setup() (*Store, error) {
 	err := db.kv.Update(func(tx *bolt.Tx) error {
 		// Make sure all the required buckets are created
-		for _, b := range [][]byte{bTerms, bIdxTerms, bDT, bIdxDT, bSPO, bOPS} {
+		for _, b := range [][]byte{bTerms, bIdxTerms, bDT, bIdxDT, bSPO, bOSP, bPOS} {
 			_, err := tx.CreateBucketIfNotExists(b)
 			if err != nil {
 				return err
@@ -393,63 +395,51 @@ func (db *Store) addTerm(tx *bolt.Tx, term rdf.Term) (id uint32, err error) {
 
 // storeTriple stores a triple in the indices.
 func (db *Store) storeTriple(tx *bolt.Tx, s, p, o uint32) error {
-	// TODO elinimate code duplication
+	indices := []struct {
+		k1 uint32
+		k2 uint32
+		v  uint32
+		bk []byte
+	}{
+		{s, p, o, bSPO},
+		{o, s, p, bOSP},
+		{p, o, s, bPOS},
+	}
 
-	// Store as triple in SPO index:
-	// Composite key of subject and predicate IDs and a value of a bitmap of objects.
-	bkt := tx.Bucket(bSPO)
-
+	newTriple := false
 	key := make([]byte, 8)
-	copy(key, u32tob(s))
-	copy(key[4:], u32tob(p))
 
-	bitmap := roaring.NewRoaringBitmap()
-	bo := bkt.Get(key)
-	if bo != nil {
-		_, err := bitmap.ReadFrom(bytes.NewReader(bo))
-		if err != nil {
-			return err
+	for _, i := range indices {
+		bkt := tx.Bucket(i.bk)
+		copy(key, u32tob(i.k1))
+		copy(key[4:], u32tob(i.k2))
+
+		bitmap := roaring.NewRoaringBitmap()
+
+		bo := bkt.Get(key)
+		if bo != nil {
+			_, err := bitmap.ReadFrom(bytes.NewReader(bo))
+			if err != nil {
+				return err
+			}
+		}
+
+		newTriple = bitmap.CheckedAdd(i.v)
+		if newTriple {
+			var b bytes.Buffer
+			_, err := bitmap.WriteTo(&b)
+			if err != nil {
+				return err
+			}
+			err = bkt.Put(key, b.Bytes())
+			if err != nil {
+				return err
+			}
 		}
 	}
-	newTriple := bitmap.CheckedAdd(o)
-	if newTriple {
-		var b bytes.Buffer
-		_, err := bitmap.WriteTo(&b)
-		if err != nil {
-			return err
-		}
-		err = bkt.Put(key, b.Bytes())
-		if err != nil {
-			return err
-		}
 
+	if newTriple {
 		atomic.AddInt64(&db.numTr, 1)
-	}
-
-	// Store as triple in OPS index:
-	// Composite key of object and predicate IDs and a value of a bitmap of subjects.
-	bkt = tx.Bucket(bOPS)
-	copy(key, u32tob(o))
-
-	bo = bkt.Get(key)
-	if bo != nil {
-		_, err := bitmap.ReadFrom(bytes.NewReader(bo))
-		if err != nil {
-			return err
-		}
-	}
-
-	newTriple = bitmap.CheckedAdd(s)
-	if newTriple {
-		var b bytes.Buffer
-		_, err := bitmap.WriteTo(&b)
-		if err != nil {
-			return err
-		}
-		err = bkt.Put(key, b.Bytes())
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
@@ -458,69 +448,59 @@ func (db *Store) storeTriple(tx *bolt.Tx, s, p, o uint32) error {
 // removeTriple removes a triple from the indices. If the triple
 // contains any terms unique to that triple, they will also be removed.
 func (db *Store) removeTriple(tx *bolt.Tx, s, p, o uint32) error {
-	// TODO think about what to do if oresent in one index but
+	// TODO think about what to do if present in one index but
 	// not in another: maybe panic? Cause It's a bug that should be fixed.
 
-	// Remove from SPO index:
-	bkt := tx.Bucket(bSPO)
+	indices := []struct {
+		k1 uint32
+		k2 uint32
+		v  uint32
+		bk []byte
+	}{
+		{s, p, o, bSPO},
+		{o, s, p, bOSP},
+		{p, o, s, bPOS},
+	}
 
+	hasTriple := false
 	key := make([]byte, 8)
-	copy(key, u32tob(s))
-	copy(key[4:], u32tob(p))
 
-	bitmap := roaring.NewRoaringBitmap()
-	bo := bkt.Get(key)
-	if bo == nil {
-		return ErrNotFound
-	}
-	_, err := bitmap.ReadFrom(bytes.NewReader(bo))
-	if err != nil {
-		return err
-	}
-	hasTriple := bitmap.CheckedRemove(o)
-	if hasTriple {
-		var b bytes.Buffer
-		_, err := bitmap.WriteTo(&b)
-		if err != nil {
-			return err
+	for _, i := range indices {
+		bkt := tx.Bucket(i.bk)
+		copy(key, u32tob(i.k1))
+		copy(key[4:], u32tob(i.k2))
+
+		bitmap := roaring.NewRoaringBitmap()
+
+		bo := bkt.Get(key)
+
+		if bo == nil {
+			return ErrNotFound
 		}
-		err = bkt.Put(key, b.Bytes())
-		if err != nil {
-			return err
-		}
-
-		atomic.AddInt64(&db.numTr, -1)
-	} // else return ErrNotFound?
-
-	// Remove from OPS index:
-	bkt = tx.Bucket(bOPS)
-	copy(key, u32tob(o))
-
-	bo = bkt.Get(key)
-	if bo != nil {
 		_, err := bitmap.ReadFrom(bytes.NewReader(bo))
 		if err != nil {
 			return err
 		}
-	} else {
-		return ErrNotFound
+
+		hasTriple = bitmap.CheckedRemove(i.v)
+		if hasTriple {
+			var b bytes.Buffer
+			_, err := bitmap.WriteTo(&b)
+			if err != nil {
+				return err
+			}
+			err = bkt.Put(key, b.Bytes())
+			if err != nil {
+				return err
+			}
+		} // else?
 	}
 
-	hasTriple = bitmap.CheckedRemove(s)
 	if hasTriple {
-		var b bytes.Buffer
-		_, err := bitmap.WriteTo(&b)
-		if err != nil {
-			return err
-		}
-		err = bkt.Put(key, b.Bytes())
-		if err != nil {
-			return err
-		}
+		atomic.AddInt64(&db.numTr, -1)
 	}
 
 	return nil
-
 }
 
 // Helper functions -----------------------------------------------------------
