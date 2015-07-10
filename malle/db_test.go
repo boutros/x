@@ -1,11 +1,16 @@
 package malle
 
 import (
+	"bytes"
+	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"testing"
 
+	"github.com/boltdb/bolt"
 	"github.com/boutros/x/malle/rdf"
+	"github.com/tgruben/roaring"
 )
 
 const (
@@ -229,6 +234,63 @@ func TestAddTriple(t *testing.T) {
 	if err != nil || !exists {
 		t.Fatalf("Store.HasTriple(%v) == %v, %v; want true, nil", tr, exists, err)
 	}
+
+	s, err := testDB.GetID(tr.Subject())
+	if err != nil {
+		t.Logf("Store.AddTriple(%v) didn't store all terms", tr)
+		t.Fatalf("Store.GetID(%v) == %v; want no error", s, err)
+	}
+
+	p, err := testDB.GetID(tr.Predicate())
+	if err != nil {
+		t.Logf("Store.AddTriple(%v) didn't store all terms", tr)
+		t.Fatalf("Store.GetID(%v) == %v; want no error", p, err)
+	}
+
+	o, err := testDB.GetID(tr.Object())
+	if err != nil {
+		t.Logf("Store.AddTriple(%v) didn't store all terms", tr)
+		t.Fatalf("Store.GetID(%v) == %v; want no error", o, err)
+	}
+
+	indices := []struct {
+		k1 uint32
+		k2 uint32
+		v  uint32
+		bk []byte
+	}{
+		{s, p, o, bSPO},
+		{o, s, p, bOSP},
+		{p, o, s, bPOS},
+	}
+
+	key := make([]byte, 8)
+	err = testDB.kv.View(func(tx *bolt.Tx) error {
+		for _, i := range indices {
+			bkt := tx.Bucket(i.bk)
+			copy(key, u32tob(i.k1))
+			copy(key[4:], u32tob(i.k2))
+			bitmap := roaring.NewRoaringBitmap()
+
+			bo := bkt.Get(key)
+			if bo != nil {
+				_, err := bitmap.ReadFrom(bytes.NewReader(bo))
+				if err != nil {
+					return err
+				}
+			}
+
+			hasTriple := bitmap.Contains(i.v)
+			if !hasTriple {
+				return fmt.Errorf("Store.AddTriple(%v) didn't store triple in index %v", tr, string(i.bk))
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
 }
 
 func TestRemoveTriple(t *testing.T) {

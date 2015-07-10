@@ -27,7 +27,7 @@ var (
 	// Triple indices:
 	bSPO = []byte("spo") // Subect + Predicate -> bitmap of Object
 	bOSP = []byte("osp") // Object + Subject   -> bitmap of Predicate
-	bPOS = []byte("pos") // PredicateO + bject -> bitmap of Subject
+	bPOS = []byte("pos") // Predicate + Object -> bitmap of Subject
 )
 
 // datatypes are the built in datatypes (IDs 0 through 41).
@@ -406,14 +406,12 @@ func (db *Store) storeTriple(tx *bolt.Tx, s, p, o uint32) error {
 		{p, o, s, bPOS},
 	}
 
-	newTriple := false
 	key := make([]byte, 8)
 
 	for _, i := range indices {
 		bkt := tx.Bucket(i.bk)
 		copy(key, u32tob(i.k1))
 		copy(key[4:], u32tob(i.k2))
-
 		bitmap := roaring.NewRoaringBitmap()
 
 		bo := bkt.Get(key)
@@ -424,28 +422,26 @@ func (db *Store) storeTriple(tx *bolt.Tx, s, p, o uint32) error {
 			}
 		}
 
-		newTriple = bitmap.CheckedAdd(i.v)
-		if newTriple {
-			var b bytes.Buffer
-			_, err := bitmap.WriteTo(&b)
-			if err != nil {
-				return err
-			}
-			err = bkt.Put(key, b.Bytes())
-			if err != nil {
-				return err
-			}
+		newTriple := bitmap.CheckedAdd(i.v)
+		if !newTriple {
+			return nil
+		}
+		var b bytes.Buffer
+		_, err := bitmap.WriteTo(&b)
+		if err != nil {
+			return err
+		}
+		err = bkt.Put(key, b.Bytes())
+		if err != nil {
+			return err
 		}
 	}
-
-	if newTriple {
-		atomic.AddInt64(&db.numTr, 1)
-	}
+	atomic.AddInt64(&db.numTr, 1)
 
 	return nil
 }
 
-// removeTriple removes a triple from the indices. If the triple
+// removeTriple removes a triple from the indices. TODO: If the triple
 // contains any terms unique to that triple, they will also be removed.
 func (db *Store) removeTriple(tx *bolt.Tx, s, p, o uint32) error {
 	// TODO think about what to do if present in one index but
@@ -462,9 +458,7 @@ func (db *Store) removeTriple(tx *bolt.Tx, s, p, o uint32) error {
 		{p, o, s, bPOS},
 	}
 
-	hasTriple := false
 	key := make([]byte, 8)
-
 	for _, i := range indices {
 		bkt := tx.Bucket(i.bk)
 		copy(key, u32tob(i.k1))
@@ -473,7 +467,6 @@ func (db *Store) removeTriple(tx *bolt.Tx, s, p, o uint32) error {
 		bitmap := roaring.NewRoaringBitmap()
 
 		bo := bkt.Get(key)
-
 		if bo == nil {
 			return ErrNotFound
 		}
@@ -481,24 +474,22 @@ func (db *Store) removeTriple(tx *bolt.Tx, s, p, o uint32) error {
 		if err != nil {
 			return err
 		}
-
-		hasTriple = bitmap.CheckedRemove(i.v)
-		if hasTriple {
-			var b bytes.Buffer
-			_, err := bitmap.WriteTo(&b)
-			if err != nil {
-				return err
-			}
-			err = bkt.Put(key, b.Bytes())
-			if err != nil {
-				return err
-			}
-		} // else?
+		hasTriple := bitmap.CheckedRemove(i.v)
+		if !hasTriple {
+			return ErrNotFound
+		}
+		var b bytes.Buffer
+		_, err = bitmap.WriteTo(&b)
+		if err != nil {
+			return err
+		}
+		err = bkt.Put(key, b.Bytes())
+		if err != nil {
+			return err
+		}
 	}
 
-	if hasTriple {
-		atomic.AddInt64(&db.numTr, -1)
-	}
+	atomic.AddInt64(&db.numTr, -1)
 
 	return nil
 }
