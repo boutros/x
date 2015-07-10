@@ -478,19 +478,91 @@ func (db *Store) removeTriple(tx *bolt.Tx, s, p, o uint32) error {
 		if !hasTriple {
 			return ErrNotFound
 		}
-		var b bytes.Buffer
-		_, err = bitmap.WriteTo(&b)
-		if err != nil {
-			return err
-		}
-		err = bkt.Put(key, b.Bytes())
-		if err != nil {
-			return err
+		// Remove from index if bitmap is empty
+		if bitmap.GetCardinality() == 0 {
+			err = bkt.Delete(key)
+			if err != nil {
+				return err
+			}
+		} else {
+			var b bytes.Buffer
+			_, err = bitmap.WriteTo(&b)
+			if err != nil {
+				return err
+			}
+			err = bkt.Put(key, b.Bytes())
+			if err != nil {
+				return err
+			}
 		}
 	}
 
 	atomic.AddInt64(&db.numTr, -1)
 
+	return db.removeOrphanedTerms(tx, s, p, o)
+}
+
+func (db *Store) removeOrphanedTerms(tx *bolt.Tx, s, p, o uint32) error {
+	var err error
+	cur := tx.Bucket(bSPO).Cursor()
+	for k, _ := cur.Seek(u32tob(s - 1)); k != nil; k, _ = cur.Seek(u32tob(s - 1)) {
+		switch bytes.Compare(u32tob(s), k[:4]) {
+		case 0:
+			goto checkP
+		case -1:
+			goto removeS
+		}
+	}
+removeS:
+	err = db.removeTerm(tx, s)
+	if err != nil {
+		return err
+	}
+checkP:
+	cur = tx.Bucket(bPOS).Cursor()
+	for k, _ := cur.Seek(u32tob(p - 1)); k != nil; k, _ = cur.Seek(u32tob(p - 1)) {
+		switch bytes.Compare(u32tob(p), k[:4]) {
+		case 0:
+			goto checkO
+		case -1:
+			goto removeP
+		}
+	}
+removeP:
+	err = db.removeTerm(tx, p)
+	if err != nil {
+		return err
+	}
+checkO:
+	cur = tx.Bucket(bOSP).Cursor()
+	for k, _ := cur.Seek(u32tob(o - 1)); k != nil; k, _ = cur.Seek(u32tob(o - 1)) {
+		switch bytes.Compare(u32tob(o), k[:4]) {
+		case 0:
+			return nil
+		case -1:
+			goto removeO
+		}
+	}
+removeO:
+	return db.removeTerm(tx, o)
+}
+
+func (db *Store) removeTerm(tx *bolt.Tx, termID uint32) error {
+	bkt := tx.Bucket(bTerms)
+	term := bkt.Get(u32tob(termID))
+	if term == nil {
+		// TODO log or panic
+		return ErrNotFound
+	}
+	err := bkt.Delete(u32tob(termID))
+	if err != nil {
+		return err
+	}
+	bkt = tx.Bucket(bIdxTerms)
+	err = bkt.Delete(term)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
