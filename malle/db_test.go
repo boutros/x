@@ -406,3 +406,28 @@ func TestStats(t *testing.T) {
 		t.Fatalf("Store.Stats().NumTriples == %d; want %d", stats.NumTriples, startStats.NumTriples+1)
 	}
 }
+
+func TestQuery(t *testing.T) {
+	s := mustNewIRI("s10")
+	tr1 := rdf.NewTriple(s, mustNewIRI("p1"), mustNewLiteral("o1"))
+	tr2 := rdf.NewTriple(s, mustNewIRI("p1"), mustNewLiteral("o2"))
+	tr3 := rdf.NewTriple(s, mustNewIRI("p2"), mustNewLiteral("o1"))
+	tr4 := rdf.NewTriple(s, mustNewIRI("p3"), mustNewLiteral("o1"))
+
+	for _, tr := range []rdf.Triple{tr1, tr2, tr3, tr4} {
+		err := testDB.AddTriple(tr)
+		if err != nil {
+			t.Fatalf("Store.AddTriple(%v) == %v; want no error", tr, err)
+		}
+	}
+
+	res, err := testDB.Query(NewQuery().Resource(s))
+	if err != nil {
+		t.Fatalf("Store.Query(NewQuery().Resource(%v)) == %v; want no error", s, err)
+	}
+
+	if !res.Eq(rdf.Graph{tr4, tr2, tr1, tr3}) {
+		t.Fatalf("Store.Query(NewQuery().Resource(%v)) == \n%v\nwant:\n%v",
+			s, res, rdf.Graph{tr4, tr2, tr1, tr3})
+	}
+}

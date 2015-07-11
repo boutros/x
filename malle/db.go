@@ -293,6 +293,72 @@ func (db *Store) HasTriple(tr rdf.Triple) (exists bool, err error) {
 	return exists, err
 }
 
+// Query represents a query into the triple store.
+type Query struct {
+	subj rdf.IRI
+}
+
+// NewQuery returns a new Query.
+func NewQuery() *Query {
+	return &Query{}
+}
+
+// Resource returns a query asking for all triples with the given
+// IRI as subject. (Same as SPARQL DESCRIBE)
+func (q *Query) Resource(s rdf.IRI) *Query {
+	q.subj = s
+	return q
+}
+
+// Query executes the query against the triple store, returning a graph
+// of the matching triples.
+func (db *Store) Query(q *Query) (g rdf.Graph, err error) {
+	err = db.kv.View(func(tx *bolt.Tx) error {
+		bkt := tx.Bucket(bIdxTerms)
+		bs := bkt.Get(q.subj.Encode())
+		if bs == nil {
+			return ErrNotFound
+		}
+		// seek in SPO index
+		sid := btou32(bs)
+		cur := tx.Bucket(bSPO).Cursor()
+	outer:
+		for k, v := cur.Seek(u32tob(sid - 1)); k != nil; k, v = cur.Next() {
+			switch bytes.Compare(k[:4], bs) {
+			case 0:
+				bkt = tx.Bucket(bTerms)
+				b := bkt.Get(k[4:])
+				if b == nil {
+					panic("term should be there!")
+				}
+				pred := db.decode(b)
+				bitmap := roaring.NewRoaringBitmap()
+				_, err = bitmap.ReadFrom(bytes.NewReader(v))
+				if err != nil {
+					return err
+				}
+				it := bitmap.Iterator()
+				for it.HasNext() {
+					o := it.Next()
+					b = bkt.Get(u32tob(o))
+					if b == nil {
+						panic("term should be there!")
+					}
+					g = append(g, rdf.NewTriple(q.subj, pred.(rdf.IRI), db.decode(b)))
+				}
+			case 1:
+				break outer
+			}
+		}
+
+		return nil
+	})
+	if err == ErrNotFound {
+		return g, nil
+	}
+	return g, err
+}
+
 // Unexported methods ---------------------------------------------------------
 
 // setup makes sure the database has all the needed buckets and predefined values
