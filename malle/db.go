@@ -507,7 +507,7 @@ func (db *Store) removeTriple(tx *bolt.Tx, s, p, o uint32) error {
 func (db *Store) removeOrphanedTerms(tx *bolt.Tx, s, p, o uint32) error {
 	var err error
 	cur := tx.Bucket(bSPO).Cursor()
-	for k, _ := cur.Seek(u32tob(s - 1)); k != nil; k, _ = cur.Seek(u32tob(s - 1)) {
+	for k, _ := cur.Seek(u32tob(s - 1)); k != nil; k, _ = cur.Next() {
 		switch bytes.Compare(u32tob(s), k[:4]) {
 		case 0:
 			goto checkP
