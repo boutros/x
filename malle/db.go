@@ -441,7 +441,7 @@ func (db *Store) storeTriple(tx *bolt.Tx, s, p, o uint32) error {
 	return nil
 }
 
-// removeTriple removes a triple from the indices. TODO: If the triple
+// removeTriple removes a triple from the indices. If the triple
 // contains any terms unique to that triple, they will also be removed.
 func (db *Store) removeTriple(tx *bolt.Tx, s, p, o uint32) error {
 	// TODO think about what to do if present in one index but
@@ -502,6 +502,8 @@ func (db *Store) removeTriple(tx *bolt.Tx, s, p, o uint32) error {
 	return db.removeOrphanedTerms(tx, s, p, o)
 }
 
+// removeOrphanedTerms removes any of the given Terms if they are no longer
+// part of any triple.
 func (db *Store) removeOrphanedTerms(tx *bolt.Tx, s, p, o uint32) error {
 	var err error
 	cur := tx.Bucket(bSPO).Cursor()
@@ -547,6 +549,7 @@ removeO:
 	return db.removeTerm(tx, o)
 }
 
+// removeTerm removes a Term using the given transaction.
 func (db *Store) removeTerm(tx *bolt.Tx, termID uint32) error {
 	bkt := tx.Bucket(bTerms)
 	term := bkt.Get(u32tob(termID))
