@@ -7,6 +7,7 @@ import (
 	"strconv"
 )
 
+// Exported datatypes
 var (
 	RDFLangString   = IRI{"http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"}
 	RDFHTML         = IRI{"http://www.w3.org/1999/02/22-rdf-syntax-ns#HTML"}
@@ -21,6 +22,7 @@ var (
 	// TODO all RDF-compatible xsd datatypes
 )
 
+// Exported errors
 var (
 	ErrUndecodable    = errors.New("rdf: cannot decode bytes into Term")
 	ErrInvalidIRI     = errors.New("rdf: invalid IRI: cannot be empty")
@@ -90,6 +92,7 @@ type IRI struct {
 	val string
 }
 
+// NewIRI return a new IRI.
 func NewIRI(iri string) (IRI, error) {
 	if len(iri) == 0 {
 		return IRI{}, ErrInvalidIRI
@@ -97,6 +100,7 @@ func NewIRI(iri string) (IRI, error) {
 	return IRI{val: iri}, nil
 }
 
+// Encode encodes an IRI.
 func (i IRI) Encode() []byte {
 	b := make([]byte, len(i.val)+1)
 	b[0] = 0x00
@@ -104,16 +108,20 @@ func (i IRI) Encode() []byte {
 	return b
 }
 
+// NT returns a N-Triples serialization of an IRI.
 func (i IRI) NT() string {
 	return fmt.Sprintf("<%s>", i.val)
 }
 
+// Literal represents a RDF Literal.
 type Literal struct {
 	val      string
 	lang     string
 	dataType IRI
 }
 
+// NewLiteral returns a new Literal, with a datatype infered from the type of the value,
+// or an error if the Literal is invalid or of unknown Go type.
 func NewLiteral(val interface{}) (Literal, error) {
 	switch t := val.(type) {
 	case string:
@@ -129,6 +137,7 @@ func NewLiteral(val interface{}) (Literal, error) {
 	panic("NewLiteral: TODO")
 }
 
+// NewLangLiteral returns a new Literal of type RDFLangString with given language tag.
 // If lang is empty, the Literal will be typed as xsd:String
 func NewLangLiteral(val string, lang string) (Literal, error) {
 	if len(val) == 0 {
@@ -147,6 +156,7 @@ func NewLangLiteral(val string, lang string) (Literal, error) {
 	}, nil
 }
 
+// NewTypedLiteral returns a new Literal with the given datatype.
 func NewTypedLiteral(val string, typ IRI) (Literal, error) {
 	if len(val) == 0 {
 		return Literal{}, ErrInvalidLiteral
@@ -157,14 +167,18 @@ func NewTypedLiteral(val string, typ IRI) (Literal, error) {
 	}, nil
 }
 
+// DataType returns the DataType IRI of the Literal.
 func (l Literal) DataType() IRI {
 	return l.dataType
 }
 
+// Lang returns the language tag of a literal, or an empty string
+// if it is not of type RDFLangString.
 func (l Literal) Lang() string {
 	return l.lang
 }
 
+// NT returns a N-Triples serialization of a Literal.
 func (l Literal) NT() string {
 	if l.lang != "" {
 		return fmt.Sprintf("\"%s\"@%s", l.val, l.lang)
@@ -174,6 +188,7 @@ func (l Literal) NT() string {
 	return fmt.Sprintf("\"%s\"^^%s", l.val, l.dataType.NT())
 }
 
+// Encode encodes a Literal.
 func (l Literal) Encode() []byte {
 	switch l.DataType() {
 	case RDFLangString:
@@ -218,14 +233,17 @@ func NewTriple(s IRI, p IRI, o Term) Triple {
 	}
 }
 
+// Subject returns the subject of a Triple.
 func (t Triple) Subject() IRI {
 	return t.subj
 }
 
+// Predicate returns the predicate of a Triple.
 func (t Triple) Predicate() IRI {
 	return t.pred
 }
 
+// Object returns the object of a Triple.
 func (t Triple) Object() Term {
 	return t.obj
 }
