@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"log"
+	"sort"
 	"sync/atomic"
 
 	"github.com/boltdb/bolt"
@@ -291,6 +292,40 @@ func (db *Store) HasTriple(tr rdf.Triple) (exists bool, err error) {
 		return nil
 	})
 	return exists, err
+}
+
+// ImportGraph stores all the graph's triples in the store.
+func (db *Store) ImportGraph(g rdf.Graph) (err error) {
+	sort.Sort(g)
+	err = db.kv.Update(func(tx *bolt.Tx) error {
+		for _, tr := range g {
+			// TODO optimize this loop:
+			// * the triples are sorted, we can reuse subject/predicate from previous iteration
+			// * if a subject has more than on value of a predicate, it should batch the bitmap updates.
+
+			sID, err := db.addTerm(tx, tr.Subject())
+			if err != nil {
+				return err
+			}
+
+			pID, err := db.addTerm(tx, tr.Predicate())
+			if err != nil {
+				return err
+			}
+
+			oID, err := db.addTerm(tx, tr.Object())
+			if err != nil {
+				return err
+			}
+
+			err = db.storeTriple(tx, sID, pID, oID)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	return err
 }
 
 // Query represents a query into the triple store.
