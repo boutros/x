@@ -3,6 +3,7 @@ package rdf
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 )
 
@@ -233,6 +234,44 @@ func (t Triple) Object() Term {
 func (t Triple) NT() string {
 	return fmt.Sprintf("%s %s %s .", t.subj.NT(), t.pred.NT(), t.obj.NT())
 }
+
+// Eq tests if two triples are equal.
+func (t Triple) Eq(other Triple) bool {
+	return t.NT() == other.NT()
+}
+
+// Graph is a collection of triples.
+type Graph []Triple
+
+// Len satisfies the Sort interface for Graph.
+func (g Graph) Len() int { return len(g) }
+
+// Swap satisfies the Sort interface for Graph.
+func (g Graph) Swap(i, j int) { g[i], g[j] = g[j], g[i] }
+
+// Less satisfies the Sort interface for Graph.
+func (g Graph) Less(i, j int) bool { return g[i].NT() < g[j].NT() }
+
+// Eq tests for equality between graphs, meaning that they contain
+// the same triples, and no graph has triples not in the other graph.
+func (g Graph) Eq(other Graph) bool {
+	if len(g) != len(other) {
+		return false
+	}
+	sort.Sort(g)
+	sort.Sort(other)
+	for i, tr := range g {
+		if !tr.Eq(other[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+//func (g Graph) Dump(w io.Writer) error {}
+//func (g Graph) NT() string {}
+
+//func Load(r io.Reader) (Graph, error) {}
 
 func min(a, b int) int {
 	if a < b {

@@ -109,3 +109,30 @@ func TestTermNT(t *testing.T) {
 		}
 	}
 }
+
+func TestGraphEq(t *testing.T) {
+	s1 := mustNewIRI("s1")
+	s2 := mustNewIRI("s2")
+	p1 := mustNewIRI("p1")
+	p2 := mustNewIRI("p2")
+	o1 := mustNewLiteral("o1")
+	o2 := mustNewLiteral("o2")
+
+	tests := []struct {
+		a    Graph
+		b    Graph
+		want bool
+	}{
+		{Graph{}, Graph{}, true},
+		{Graph{Triple{s1, p1, o1}}, Graph{Triple{s1, p1, o1}}, true},
+		{Graph{Triple{s1, p1, o1}}, Graph{Triple{s1, p1, o2}}, false},
+		{Graph{Triple{s1, p1, o1}, Triple{s2, p1, o1}}, Graph{Triple{s2, p1, o1}, Triple{s1, p1, o1}}, true},
+		{Graph{Triple{s1, p1, o1}, Triple{s1, p2, o1}, Triple{s2, p2, o2}}, Graph{Triple{s2, p2, o2}, Triple{s1, p2, o1}, Triple{s1, p1, o1}}, true},
+		{Graph{Triple{s1, p1, o1}, Triple{s1, p2, o1}, Triple{s2, p2, o2}}, Graph{Triple{s2, p2, o2}, Triple{s1, p2, o2}, Triple{s1, p1, o1}}, false},
+	}
+	for _, tt := range tests {
+		if tt.a.Eq(tt.b) != tt.want {
+			t.Errorf("(%v).Eq(%v) == %v; want %v", tt.a, tt.b, tt.a.Eq(tt.b), tt.want)
+		}
+	}
+}
