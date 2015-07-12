@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"log"
+	"os"
 	"sort"
 	"sync/atomic"
 
@@ -94,9 +95,10 @@ type Store struct {
 
 // Stats holds some statistics of the triple store.
 type Stats struct {
-	NumTerms   int
-	NumTriples int
-	// SizeInBytes int
+	NumTerms    int
+	NumTriples  int
+	File        string
+	SizeInBytes int
 }
 
 // Public API -----------------------------------------------------------------
@@ -125,6 +127,11 @@ func (db *Store) Stats() Stats {
 		st.NumTerms = bkt.Stats().KeyN
 		bkt = tx.Bucket(bSPO)
 		st.NumTriples = int(atomic.LoadInt64(&db.numTr))
+		st.File = db.kv.Path()
+		s, err := os.Stat(st.File)
+		if err == nil {
+			st.SizeInBytes = int(s.Size())
+		}
 		return nil
 	})
 	return st
