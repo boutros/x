@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
 
-	"github.com/alecthomas/template"
 	"github.com/boutros/x/malle"
 	"github.com/boutros/x/malle/rdf"
 )
