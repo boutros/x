@@ -104,8 +104,8 @@ func TestTermNT(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		if tt.in.NT() != tt.want {
-			t.Errorf("%+v.NT() == %s; want %s", tt.in, tt.in.NT(), tt.want)
+		if tt.in.String() != tt.want {
+			t.Errorf("%+v.String() == %s; want %s", tt.in, tt.in.String(), tt.want)
 		}
 	}
 }
