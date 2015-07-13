@@ -33,7 +33,6 @@ type lexer struct {
 	line    []byte
 	pos     int
 	start   int
-	width   int
 	escaped bool
 }
 
@@ -53,23 +52,22 @@ func (l *lexer) readRune() rune {
 	}
 
 	r, w := utf8.DecodeRune(l.line[l.pos:])
-	l.width = w
-	l.pos += l.width
+	l.pos += w
 	return r
 }
 
 func (l *lexer) emit(typ tokenType) token {
+	s := l.start
+	l.start = l.pos
+
 	if l.escaped {
 		l.escaped = false
-		s := l.start
-		l.start = l.pos
 		return token{
 			Typ:   typ,
 			value: unescape(l.line[s:l.pos]),
 		}
 	}
-	s := l.start
-	l.start = l.pos
+
 	return token{
 		Typ:   typ,
 		value: unescape(l.line[s:l.pos]),
@@ -77,17 +75,17 @@ func (l *lexer) emit(typ tokenType) token {
 }
 
 func (l *lexer) emitAndIgnore(typ tokenType, ignore int) token {
+	s := l.start
+	l.start = l.pos
+
 	if l.escaped {
 		l.escaped = false
-		s := l.start
-		l.start = l.pos
 		return token{
 			Typ:   typ,
 			value: unescape(l.line[s : l.pos-ignore]),
 		}
 	}
-	s := l.start
-	l.start = l.pos
+
 	return token{
 		Typ:   typ,
 		value: l.line[s : l.pos-ignore],
@@ -118,8 +116,7 @@ func (l *lexer) next() token {
 			l.ignore()
 			continue
 		case '<':
-			found := l.consume('>')
-			if !found {
+			if found := l.consume('>'); !found {
 				return l.emit(tokenError)
 			}
 			l.start++ // ignore <
@@ -130,12 +127,12 @@ func (l *lexer) next() token {
 		case eof:
 			return l.emit(tokenEOL)
 		case '#':
+			// comments are ignored and not emitted
 			l.pos = len(l.line)
 			l.ignore()
 			return l.emit(tokenEOL)
 		case '"':
-			found := l.consume('"')
-			if !found {
+			if found := l.consume('"'); !found {
 				return l.emit(tokenError)
 			}
 			l.start++ // ignore starting "
