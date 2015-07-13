@@ -51,12 +51,12 @@ const htmlResource = `<!DOCTYPE html>
 </head>
 <body>
 	<div>
-		<h3>{{with index .  0}}{{.Subject.NT | html}}{{end}}</h3>
+		<h3>{{with index .  0}}{{.Subject | html}}{{end}}</h3>
 		<table>
 			{{range .}}
 			<tr>
-				<td>{{.Predicate.NT | html}}</td>
-				<td>{{.Object.NT | html}}</td>
+				<td>{{.Predicate | html}}</td>
+				<td>{{.Object | html}}</td>
 			</tr>
 			{{end}}
 		</table>
@@ -99,7 +99,7 @@ func main() {
 	})
 	http.HandleFunc("/describe", func(w http.ResponseWriter, req *http.Request) {
 		q := req.URL.Query()["IRI"][0] // TODO check if IRI param present
-		iri, err := rdf.NewIRI(p)
+		iri, err := rdf.NewIRI(q)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

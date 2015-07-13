@@ -34,8 +34,8 @@ type Term interface {
 	// Encode returns a byte representation of a term.
 	Encode() []byte
 
-	// NT returns a string representation of a Term in N-Triples format.
-	NT() string
+	// String returns a string representation of a Term in N-Triples format.
+	String() string
 }
 
 // DecodeTerm decodes a byte-serialzed term into a Term.
@@ -84,7 +84,7 @@ func DecodeTerm(b []byte) (Term, error) {
 
 // TermsEq tests for term equality.
 func TermsEq(a, b Term) bool {
-	return a != nil && b != nil && a.NT() == b.NT()
+	return a != nil && b != nil && a.String() == b.String()
 }
 
 // IRI represents a IRI resource.
@@ -108,8 +108,8 @@ func (i IRI) Encode() []byte {
 	return b
 }
 
-// NT returns a N-Triples serialization of an IRI.
-func (i IRI) NT() string {
+// String returns a N-Triples serialization of an IRI.
+func (i IRI) String() string {
 	return fmt.Sprintf("<%s>", i.val)
 }
 
@@ -178,14 +178,14 @@ func (l Literal) Lang() string {
 	return l.lang
 }
 
-// NT returns a N-Triples serialization of a Literal.
-func (l Literal) NT() string {
+// String returns a N-Triples serialization of a Literal.
+func (l Literal) String() string {
 	if l.lang != "" {
 		return fmt.Sprintf("\"%s\"@%s", l.val, l.lang)
 	} else if TermsEq(l.DataType(), XSDString) {
 		return fmt.Sprintf("\"%s\"", l.val)
 	}
-	return fmt.Sprintf("\"%s\"^^%s", l.val, l.dataType.NT())
+	return fmt.Sprintf("\"%s\"^^%s", l.val, l.dataType.String())
 }
 
 // Encode encodes a Literal.
@@ -248,14 +248,14 @@ func (t Triple) Object() Term {
 	return t.obj
 }
 
-// NT returns an N-triples serialization of the Triple.
-func (t Triple) NT() string {
-	return fmt.Sprintf("%s %s %s .", t.subj.NT(), t.pred.NT(), t.obj.NT())
+// String returns an N-triples serialization of the Triple.
+func (t Triple) String() string {
+	return fmt.Sprintf("%s %s %s .", t.subj.String(), t.pred.String(), t.obj.String())
 }
 
 // Eq tests if two triples are equal.
 func (t Triple) Eq(other Triple) bool {
-	return t.NT() == other.NT()
+	return t.String() == other.String()
 }
 
 // Graph is a collection of triples.
@@ -268,7 +268,7 @@ func (g Graph) Len() int { return len(g) }
 func (g Graph) Swap(i, j int) { g[i], g[j] = g[j], g[i] }
 
 // Less satisfies the Sort interface for Graph.
-func (g Graph) Less(i, j int) bool { return g[i].NT() < g[j].NT() }
+func (g Graph) Less(i, j int) bool { return g[i].String() < g[j].String() }
 
 // Eq tests for equality between graphs, meaning that they contain
 // the same triples, and no graph has triples not in the other graph.
@@ -287,7 +287,7 @@ func (g Graph) Eq(other Graph) bool {
 }
 
 //func (g Graph) Dump(w io.Writer) error {}
-//func (g Graph) NT() string {}
+//func (g Graph) String() string {}
 
 //func Load(r io.Reader) (Graph, error) {}
 
