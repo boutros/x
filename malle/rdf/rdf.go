@@ -31,8 +31,8 @@ var (
 
 // Term represents a RDF Term
 type Term interface {
-	// Encode returns a byte representation of a term.
-	Encode() []byte
+	// Bytes return the encoded byte representation of a Term.
+	Bytes() []byte
 
 	// String returns a string representation of a Term in N-Triples format.
 	String() string
@@ -98,8 +98,8 @@ func NewIRI(iri string) (IRI, error) {
 	return IRI{val: iri}, nil
 }
 
-// Encode encodes an IRI.
-func (i IRI) Encode() []byte {
+// Bytes returns the IRIs encoded byte representation.
+func (i IRI) Bytes() []byte {
 	b := make([]byte, len(i.val)+1)
 	b[0] = 0x00
 	copy(b[1:], []byte(i.val))
@@ -196,8 +196,8 @@ func (l Literal) Eq(other Term) bool {
 	return other != nil && l.String() == other.String()
 }
 
-// Encode encodes a Literal.
-func (l Literal) Encode() []byte {
+// Bytes return the Literal's encoded byte representation.
+func (l Literal) Bytes() []byte {
 	switch l.DataType() {
 	case RDFLangString:
 		b := make([]byte, len(l.val)+len(l.lang)+2)

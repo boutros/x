@@ -357,7 +357,7 @@ func (q *Query) Resource(s rdf.IRI) *Query {
 func (db *Store) Query(q *Query) (g rdf.Graph, err error) {
 	err = db.kv.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(bIdxTerms)
-		bs := bkt.Get(q.subj.Encode())
+		bs := bkt.Get(q.subj.Bytes())
 		if bs == nil {
 			return ErrNotFound
 		}
@@ -448,7 +448,7 @@ func (db *Store) setup() (*Store, error) {
 }
 
 func (db *Store) encode(term rdf.Term) []byte {
-	return term.Encode()
+	return term.Bytes()
 }
 
 func (db *Store) decode(b []byte) rdf.Term {
