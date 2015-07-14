@@ -145,7 +145,7 @@ func TestEncodeDecode(t *testing.T) {
 		mustNewLangLiteral("æøå", "nb-no"),
 	}
 	for _, term := range tests {
-		if !rdf.TermsEq(nilDB.decode(nilDB.encode(term)), term) {
+		if !nilDB.decode(nilDB.encode(term)).Eq(term) {
 			t.Errorf("Store.encode/decode roundtrip failed for %+v", term)
 		}
 	}
@@ -173,7 +173,7 @@ func TestStoreTerm(t *testing.T) {
 			t.Fatalf("Store.GetTerm(%v)) == %v; want no error", id, err)
 		}
 
-		if !rdf.TermsEq(term, want) {
+		if !term.Eq(want) {
 			t.Fatal("Store.AddTerm returned wrong id")
 		}
 

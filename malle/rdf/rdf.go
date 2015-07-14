@@ -36,6 +36,9 @@ type Term interface {
 
 	// String returns a string representation of a Term in N-Triples format.
 	String() string
+
+	// Eq tests if two terms are equal.
+	Eq(Term) bool
 }
 
 // DecodeTerm decodes a byte-serialzed term into a Term.
@@ -82,11 +85,6 @@ func DecodeTerm(b []byte) (Term, error) {
 	}
 }
 
-// TermsEq tests for term equality.
-func TermsEq(a, b Term) bool {
-	return a != nil && b != nil && a.String() == b.String()
-}
-
 // IRI represents a IRI resource.
 type IRI struct {
 	val string
@@ -111,6 +109,11 @@ func (i IRI) Encode() []byte {
 // String returns a N-Triples serialization of an IRI.
 func (i IRI) String() string {
 	return fmt.Sprintf("<%s>", i.val)
+}
+
+// Eq tests if IRI is equal to another Term.
+func (i IRI) Eq(other Term) bool {
+	return other != nil && i.String() == other.String()
 }
 
 // Literal represents a RDF Literal.
@@ -182,10 +185,15 @@ func (l Literal) Lang() string {
 func (l Literal) String() string {
 	if l.lang != "" {
 		return fmt.Sprintf("\"%s\"@%s", l.val, l.lang)
-	} else if TermsEq(l.DataType(), XSDString) {
+	} else if l.DataType().Eq(XSDString) {
 		return fmt.Sprintf("\"%s\"", l.val)
 	}
 	return fmt.Sprintf("\"%s\"^^%s", l.val, l.dataType.String())
+}
+
+// Eq tests if the Literal is equal to another Term.
+func (l Literal) Eq(other Term) bool {
+	return other != nil && l.String() == other.String()
 }
 
 // Encode encodes a Literal.
