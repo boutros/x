@@ -49,13 +49,13 @@ func TestEncodeDecodeRoundtrip(t *testing.T) {
 	}
 
 	for _, t1 := range tests {
-		t2, err := DecodeTerm(t1.Encode())
+		t2, err := DecodeTerm(t1.Bytes())
 		if err != nil {
-			t.Errorf("DecodeTerm(%v) err => %v ; want <nil>", t1.Encode(), err)
+			t.Errorf("DecodeTerm(%v) err => %v ; want <nil>", t1.Bytes(), err)
 			continue
 		}
-		if !TermsEq(t1, t2) {
-			t.Errorf("Encode/Decode roundtrip failed: %v != %v", t1, t2)
+		if !t1.Eq(t2) {
+			t.Errorf("Encode/Decode roundtrip failed: %v != %v", t1.Bytes(), t2.Bytes())
 		}
 	}
 }
@@ -81,8 +81,8 @@ func TestTermDecode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		term, err := DecodeTerm(tt.in)
-		if (err != nil && err != tt.errWant) || (err == nil && !TermsEq(tt.want, term)) {
-			t.Errorf("DecodeTerm(%v) == %v, %v; want %v, %v", tt.in, term, err, tt.want, tt.errWant)
+		if (err != nil && err != tt.errWant) || (err == nil && !tt.want.Eq(term)) {
+			t.Errorf("DecodeTerm(%#v) == %#v, %v; want %#v, %v", tt.in, term, err, tt.want, tt.errWant)
 		}
 	}
 }
