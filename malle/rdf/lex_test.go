@@ -98,6 +98,11 @@ func TestLexer(t *testing.T) {
 		{`"hei"@nb-no .`, []token{
 			{tokenLiteral, []byte("hei")}, {tokenLang, []byte("nb-no")}, {tokenDot, []byte("")}}},
 		{`@ en`, []token{{tokenError, []byte(`1: empty language tag: ""`)}}},
+		{`^<a>`, []token{{tokenError, []byte("1: unexpected token: \"^\"")}}},
+		{`"1"^^<a>`, []token{
+			{tokenLiteral, []byte("1")},
+			{tokenDTMarker, []byte("")},
+			{tokenIRI, []byte("a")}}},
 	}
 
 	for _, tt := range tests {

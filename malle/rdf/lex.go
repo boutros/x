@@ -26,6 +26,7 @@ const (
 	tokenLiteral
 	tokenBNode
 	tokenLang
+	tokenDTMarker
 )
 
 type lexer struct {
@@ -174,6 +175,15 @@ func (l *lexer) next() token {
 				return l.error("empty language tag")
 			}
 			return l.emit(tokenLang)
+		case '^':
+			r = l.readRune()
+			if r != '^' {
+				l.pos--
+				l.consumeUntilNextToken()
+				return l.error("unexpected token")
+			}
+			l.ignore() // ignore ^^
+			return l.emit(tokenDTMarker)
 		default:
 			l.consumeUntilNextToken()
 			return l.error("unexpected token")
