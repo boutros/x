@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"strconv"
 	"unicode/utf8"
 )
 
@@ -67,18 +66,7 @@ func (l *lexer) emitAndIgnore(typ tokenType, ignore int) token {
 	s := l.start
 	l.start = l.pos
 
-	if l.escaped {
-		l.escaped = false
-		return token{
-			Typ:   typ,
-			value: unescape(l.input[s : l.pos-ignore]),
-		}
-	}
-
-	return token{
-		Typ:   typ,
-		value: l.input[s : l.pos-ignore],
-	}
+	return l.unescape(typ, l.input[s:l.pos-ignore])
 }
 
 func (l *lexer) error(msg string) token {
@@ -192,8 +180,22 @@ func (l *lexer) next() token {
 	}
 }
 
-func unescape(text []byte) []byte {
-	// TODO clean up this function, make it safe from index out of range errors (see text[i])
+func (l *lexer) unescape(typ tokenType, val []byte) token {
+	if !l.escaped {
+		return token{Typ: typ, value: val}
+	}
+	l.escaped = false
+	switch typ {
+	case tokenIRI:
+		panic("TODO")
+	case tokenLiteral:
+		return l.unescapeLiteral(typ, val)
+	default:
+		return token{Typ: typ, value: val}
+	}
+}
+
+func (l *lexer) unescapeLiteral(typ tokenType, text []byte) token {
 	buf := bytes.NewBuffer(make([]byte, 0, len(text)))
 	i := 0
 	for r, w := utf8.DecodeRune(text[i:]); w != 0; r, w = utf8.DecodeRune(text[i:]) {
@@ -221,26 +223,50 @@ func unescape(text []byte) []byte {
 			c = '\''
 		case '\\':
 			c = '\\'
-		case 'u':
-			rc, err := strconv.ParseInt(string(text[i+1:i+5]), 16, 32)
-			if err != nil {
-				panic(fmt.Errorf("internal parser error: %v", err))
+		case 'u', 'U':
+			d := uint64(0)
+			start := i
+			digits := 4
+			if text[i] == 'U' {
+				digits = 8
 			}
-			buf.WriteRune(rune(rc))
-			i += 5
-			continue
-		case 'U':
-			rc, err := strconv.ParseInt(string(text[i+1:i+9]), 16, 32)
-			if err != nil {
-				panic(fmt.Errorf("internal parser error: %v", err))
+			for i < start+digits {
+				i++
+				if i == len(text) {
+					return token{
+						Typ:   tokenError,
+						value: []byte(fmt.Sprintf("%d: illegal escape sequence: %q", l.line, text[start-1:i]))}
+				}
+				x := uint64(text[i])
+				if x >= 'a' {
+					x -= 'a' - 'A'
+				}
+				d1 := x - '0'
+				if d1 > 9 {
+					d1 = 10 + d1 - ('A' - '0')
+				}
+				if 0 > d1 || d1 > 15 {
+					j := i
+					for !utf8.FullRune(text[j:i]) {
+						i++
+					}
+					return token{
+						Typ:   tokenError,
+						value: []byte(fmt.Sprintf("%d: illegal escape sequence: %q", l.line, text[start-1:i]))}
+				}
+				d = (16 * d) + d1
 			}
-			buf.WriteRune(rune(rc))
-			i += 9
+			buf.WriteRune(rune(d))
+			i++
 			continue
+		default:
+			return token{
+				Typ:   tokenError,
+				value: []byte(fmt.Sprintf("%d: illegal escape sequence: %q", l.line, text[i-1:]))}
 		}
 		buf.WriteByte(c)
 		i++
 	}
 
-	return buf.Bytes()
+	return token{Typ: typ, value: buf.Bytes()}
 }

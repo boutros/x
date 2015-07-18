@@ -34,34 +34,6 @@ func equalTokens(a, b []token) bool {
 	return true
 }
 
-func TestUnescape(t *testing.T) {
-	tests := []struct {
-		in   string
-		want string
-	}{
-		{`\t`, "\t"},
-		{`\b`, "\b"},
-		{`\n`, "\n"},
-		{`\r`, "\r"},
-		{`\f`, "\f"},
-		{`\\`, "\\"},
-		{`\u00b7`, "·"},
-		{`\U000000b7`, "·"},
-		{`\t\u00b7`, "\t·"},
-		{`\b\U000000b7`, "\b·"},
-		{`\u00b7\n`, "·\n"},
-		{`\U000000b7\r`, "·\r"},
-		{`\u00b7\f\U000000b7`, "·\f·"},
-		{`\U000000b7\\\u00b7`, "·\\·"},
-	}
-
-	for _, tt := range tests {
-		got := unescape([]byte(tt.in))
-		if string(got) != tt.want {
-			t.Errorf("unescape(%q) => %q; want %q", tt.in, got, tt.want)
-		}
-	}
-}
 func TestLexer(t *testing.T) {
 	tests := []struct {
 		in   string
@@ -103,6 +75,12 @@ func TestLexer(t *testing.T) {
 			{tokenLiteral, []byte("1")},
 			{tokenDTMarker, []byte("")},
 			{tokenIRI, []byte("a")}}},
+		{`""`, []token{{tokenLiteral, []byte("")}}},
+		{`"xy\z"`, []token{{tokenError, []byte(`1: illegal escape sequence: "\\z"`)}}},
+		{`"\t\r\n\f\b\\\u00b7\u00B7\U000000b7\U000000B7"`, []token{{tokenLiteral, []byte("\t\r\n\f\b\\····")}}},
+		{`"\u00F"`, []token{{tokenError, []byte(`1: illegal escape sequence: "\\u00F"`)}}},
+		{`"\u123"`, []token{{tokenError, []byte(`1: illegal escape sequence: "\\u123"`)}}},
+		{`"\u123ø."`, []token{{tokenError, []byte(`1: illegal escape sequence: "\\u123ø"`)}}},
 	}
 
 	for _, tt := range tests {
