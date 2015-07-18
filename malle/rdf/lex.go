@@ -28,11 +28,11 @@ const (
 
 type lexer struct {
 	r       *bufio.Reader
-	input   []byte
-	line    int
-	pos     int
-	start   int
-	escaped bool
+	input   []byte // current line being lexed
+	line    int    // current line number
+	pos     int    // position in line (in bytes, not runes)
+	start   int    // start of current token
+	escaped bool   // true when token needs to be unescaped before emitting
 }
 
 func newLexer(r io.Reader) *lexer {
@@ -110,6 +110,19 @@ func (l *lexer) consume(want rune) bool {
 	return true
 }
 
+func (l *lexer) consumeUntilNextToken() {
+	for r := l.readRune(); ; r = l.readRune() {
+		switch r {
+		case eof:
+			return
+		//case '\\':
+		case '<', '.', '"', '#', ' ', '\t':
+			l.pos--
+			return
+		}
+	}
+}
+
 func (l *lexer) next() token {
 	for {
 		r := l.readRune()
@@ -135,10 +148,13 @@ func (l *lexer) next() token {
 			return l.emit(tokenEOL)
 		case '"':
 			if found := l.consume('"'); !found {
-				return l.emit(tokenError)
+				return l.error("unclosed Literal")
 			}
 			l.start++ // ignore starting "
 			return l.emitAndIgnore(tokenLiteral, 1)
+		default:
+			l.consumeUntilNextToken()
+			return l.error("unexpected token")
 		}
 
 	}

@@ -69,8 +69,11 @@ func TestLexer(t *testing.T) {
 	}{
 		{"", []token{}},
 		{" \t ", []token{}},
+		{"<>", []token{{tokenIRI, []byte("")}}},
 		{"<a>", []token{{tokenIRI, []byte("a")}}},
-		{"<a", []token{{tokenError, []byte("1: unclosed IRI: \"<a\"")}}},
+		{"<a", []token{{tokenError, []byte(`1: unclosed IRI: "<a"`)}}},
+		{"a>", []token{{tokenError, []byte(`1: unexpected token: "a>"`)}}},
+		{"abc.", []token{{tokenError, []byte(`1: unexpected token: "abc"`)}}},
 		{" <http://xyz/æøå.123> \t ", []token{{tokenIRI, []byte("http://xyz/æøå.123")}}},
 		{"<a><b> <c> .", []token{
 			{tokenIRI, []byte("a")},
@@ -81,6 +84,8 @@ func TestLexer(t *testing.T) {
 		{"<a> # a comment <b>", []token{{tokenIRI, []byte("a")}}},
 		{`"abc"`, []token{{tokenLiteral, []byte("abc")}}},
 		{`"line #1\nline #2"`, []token{{tokenLiteral, []byte("line #1\nline #2")}}},
+		{"'abc'", []token{{tokenError, []byte(`1: unexpected token: "'abc'"`)}}},
+		{`<s>"o`, []token{{tokenIRI, []byte("s")}, {tokenError, []byte(`1: unclosed Literal: "\"o"`)}}},
 	}
 
 	for _, tt := range tests {
