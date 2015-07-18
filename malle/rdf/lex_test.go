@@ -86,6 +86,8 @@ func TestLexer(t *testing.T) {
 		{`"line #1\nline #2"`, []token{{tokenLiteral, []byte("line #1\nline #2")}}},
 		{"'abc'", []token{{tokenError, []byte(`1: unexpected token: "'abc'"`)}}},
 		{`<s>"o`, []token{{tokenIRI, []byte("s")}, {tokenError, []byte(`1: unclosed Literal: "\"o"`)}}},
+		{"_:b1", []token{{tokenBNode, []byte("b1")}}},
+		{"_:abc44 <p>", []token{{tokenBNode, []byte("abc44")}, {tokenIRI, []byte("p")}}},
 	}
 
 	for _, tt := range tests {

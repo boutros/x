@@ -24,6 +24,7 @@ const (
 	tokenIRI
 	tokenDot
 	tokenLiteral
+	tokenBNode
 )
 
 type lexer struct {
@@ -152,6 +153,15 @@ func (l *lexer) next() token {
 			}
 			l.start++ // ignore starting "
 			return l.emitAndIgnore(tokenLiteral, 1)
+		case '_':
+			r = l.readRune()
+			if r != ':' {
+				l.consumeUntilNextToken()
+				return l.error("unexpected token")
+			}
+			l.ignore() // ignore _:
+			l.consumeUntilNextToken()
+			return l.emit(tokenBNode)
 		default:
 			l.consumeUntilNextToken()
 			return l.error("unexpected token")
