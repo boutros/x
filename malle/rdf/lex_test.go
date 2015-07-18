@@ -94,6 +94,10 @@ func TestLexer(t *testing.T) {
 			{tokenLiteral, []byte("\"\\\r\n Здра́вствуйте\t☺")},
 			{tokenDot, []byte("")}}},
 		{`"\u006F \U0000006F"`, []token{{tokenLiteral, []byte("o o")}}},
+		{`"hi"@en`, []token{{tokenLiteral, []byte("hi")}, {tokenLang, []byte("en")}}},
+		{`"hei"@nb-no .`, []token{
+			{tokenLiteral, []byte("hei")}, {tokenLang, []byte("nb-no")}, {tokenDot, []byte("")}}},
+		{`@ en`, []token{{tokenError, []byte(`1: empty language tag: ""`)}}},
 	}
 
 	for _, tt := range tests {

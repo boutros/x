@@ -25,6 +25,7 @@ const (
 	tokenDot
 	tokenLiteral
 	tokenBNode
+	tokenLang
 )
 
 type lexer struct {
@@ -165,6 +166,14 @@ func (l *lexer) next() token {
 			l.ignore() // ignore _:
 			l.consumeUntilNextToken()
 			return l.emit(tokenBNode)
+		case '@':
+			l.ignore() // ignore @
+			p := l.pos
+			l.consumeUntilNextToken()
+			if l.pos == p {
+				return l.error("empty language tag")
+			}
+			return l.emit(tokenLang)
 		default:
 			l.consumeUntilNextToken()
 			return l.error("unexpected token")
