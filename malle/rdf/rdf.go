@@ -38,6 +38,9 @@ type Term interface {
 	// String returns a string representation of a Term in N-Triples format.
 	String() string
 
+	// Value returns the typed value of a Term.
+	Value() interface{}
+
 	// Eq tests if two terms are equal.
 	Eq(Term) bool
 }
@@ -64,16 +67,16 @@ func DecodeTerm(b []byte) (Term, error) {
 			val := make([]byte, len(b)-1)
 			val[0] = 0x02
 			copy(val[1:], b[2:])
-			return Literal{val}, nil
+			return Literal{val: val}, nil
 		}
 		val := make([]byte, len(b))
 		copy(val, b)
-		return Literal{val}, nil
+		return Literal{val: val}, nil
 	// xsd:String
 	case 0x02:
 		val := make([]byte, len(b))
 		copy(val, b)
-		return Literal{val}, nil
+		return Literal{val: val}, nil
 	// Other typed literals
 	case 0xFF:
 		ll := int(b[1]) + 2
@@ -81,7 +84,7 @@ func DecodeTerm(b []byte) (Term, error) {
 		copy(iri[1:], b[2:ll])
 		val := make([]byte, len(b))
 		copy(val, b)
-		return Literal{val}, nil
+		return Literal{val: val}, nil
 	default:
 		panic("TODO")
 	}
@@ -112,6 +115,11 @@ func (i IRI) String() string {
 	return fmt.Sprintf("<%s>", string(i.val[1:]))
 }
 
+// Value returns the IRI as a string.
+func (i IRI) Value() interface{} {
+	return string(i.val[1:])
+}
+
 // Eq tests if IRI is equal to another Term.
 func (i IRI) Eq(other Term) bool {
 	return other != nil && i.String() == other.String()
@@ -119,7 +127,8 @@ func (i IRI) Eq(other Term) bool {
 
 // Literal represents a RDF Literal.
 type Literal struct {
-	val []byte
+	val   []byte
+	typed interface{}
 }
 
 // NewLiteral returns a new Literal, with a datatype infered from the type of the value,
@@ -133,7 +142,7 @@ func NewLiteral(val interface{}) (Literal, error) {
 		val := make([]byte, len(t)+1)
 		copy(val[1:], []byte(t))
 		val[0] = 0x02
-		return Literal{val}, nil
+		return Literal{val: val}, nil
 	case int:
 		b := make([]byte, 1+binary.MaxVarintLen64)
 		b[0] = 0x03
@@ -158,7 +167,7 @@ func NewLangLiteral(val string, lang string) (Literal, error) {
 		b := make([]byte, len(val)+1)
 		b[1] = 0x02
 		copy(b, []byte(val))
-		return Literal{b}, nil
+		return Literal{val: b}, nil
 	}
 	b := make([]byte, len(val)+len(lang)+2)
 	b[0] = 0x01
@@ -166,7 +175,7 @@ func NewLangLiteral(val string, lang string) (Literal, error) {
 	b[1] = uint8(ll)
 	copy(b[2:], []byte(lang))
 	copy(b[2+ll:], []byte(val))
-	return Literal{b}, nil
+	return Literal{val: b}, nil
 }
 
 // NewTypedLiteral returns a new Literal with the given datatype.
@@ -178,14 +187,14 @@ func NewTypedLiteral(val string, typ IRI) (Literal, error) {
 		b := make([]byte, len(val)+1)
 		b[0] = 0x02
 		copy(b[1:], []byte(val))
-		return Literal{b}, nil
+		return Literal{val: b}, nil
 	} // elsif other xsd types
 	b := make([]byte, len(val)+len(typ.val)+1)
 	b[0] = 0xFF
 	b[1] = uint8(len(typ.val) - 1)
 	copy(b[2:], typ.val[1:])
 	copy(b[b[1]+2:], []byte(val))
-	return Literal{b}, nil
+	return Literal{val: b}, nil
 }
 
 // DataType returns the DataType IRI of the Literal.
@@ -225,17 +234,38 @@ func (l Literal) String() string {
 	case 0x02:
 		return fmt.Sprintf("\"%s\"", string(l.val[1:]))
 	case 0x03:
-		i, _ := binary.Varint(l.val[1:])
-		return fmt.Sprintf("\"%d\"^^%s", i, l.DataType().String())
+		return fmt.Sprintf("\"%d\"^^%s", l.Value(), l.DataType().String())
 	case 0x04:
-		i, _ := binary.Uvarint(l.val[1:])
-		return fmt.Sprintf("\"%d\"^^%s", i, l.DataType().String())
+		return fmt.Sprintf("\"%d\"^^%s", l.Value(), l.DataType().String())
 	case 0xFF:
 		dt := l.DataType().String()
 		return fmt.Sprintf("\"%s\"^^%s", string(l.val[len(dt):]), dt)
 	}
 
 	panic("TODO Literal.String() not langstring, string, other")
+}
+
+// Value returns the Literal as a Go-typed value
+func (l Literal) Value() interface{} {
+	if l.typed == nil {
+		switch l.val[0] {
+		case 0x01:
+			l.typed = string(l.val[2+len(l.Lang()):])
+		case 0x02:
+			l.typed = string(l.val[1:])
+		case 0x03:
+			i, _ := binary.Varint(l.val[1:])
+			l.typed = i
+		case 0x04:
+			i, _ := binary.Uvarint(l.val[1:])
+			l.typed = i
+		case 0xFF:
+			l.typed = string(l.val[len(l.DataType().String()):])
+		default:
+			panic("TODO Literal.Value()")
+		}
+	}
+	return l.typed
 }
 
 // Eq tests if the Literal is equal to another Term.
