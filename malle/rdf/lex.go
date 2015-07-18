@@ -106,6 +106,9 @@ func (l *lexer) consume(want rune) bool {
 		}
 		if r == '\\' {
 			l.escaped = true
+			if l.readRune() == want {
+				continue
+			}
 		}
 	}
 	return true
@@ -171,53 +174,53 @@ func (l *lexer) next() token {
 }
 
 func unescape(text []byte) []byte {
+	// TODO clean up this function, make it safe from index out of range errors (see text[i])
 	buf := bytes.NewBuffer(make([]byte, 0, len(text)))
 	i := 0
 	for r, w := utf8.DecodeRune(text[i:]); w != 0; r, w = utf8.DecodeRune(text[i:]) {
-		switch r {
-		case '\\':
-			i++
-			var c byte
-			switch text[i] {
-			case 't':
-				c = '\t'
-			case 'b':
-				c = '\b'
-			case 'n':
-				c = '\n'
-			case 'r':
-				c = '\r'
-			case 'f':
-				c = '\f'
-			case '"':
-				c = '"'
-			case '\'':
-				c = '\''
-			case '\\':
-				c = '\\'
-			case 'u':
-				rc, err := strconv.ParseInt(string(text[i+1:i+5]), 16, 32)
-				if err != nil {
-					panic(fmt.Errorf("internal parser error: %v", err))
-				}
-				buf.WriteRune(rune(rc))
-				i += 5
-				continue
-			case 'U':
-				rc, err := strconv.ParseInt(string(text[i+1:i+9]), 16, 32)
-				if err != nil {
-					panic(fmt.Errorf("internal parser error: %v", err))
-				}
-				buf.WriteRune(rune(rc))
-				i += 9
-				continue
-			}
-			buf.WriteByte(c)
-			i++
-		default:
+		if r != '\\' {
 			buf.WriteRune(r)
 			i += w
+			continue
 		}
+		i++
+		var c byte
+		switch text[i] {
+		case 't':
+			c = '\t'
+		case 'b':
+			c = '\b'
+		case 'n':
+			c = '\n'
+		case 'r':
+			c = '\r'
+		case 'f':
+			c = '\f'
+		case '"':
+			c = '"'
+		case '\'':
+			c = '\''
+		case '\\':
+			c = '\\'
+		case 'u':
+			rc, err := strconv.ParseInt(string(text[i+1:i+5]), 16, 32)
+			if err != nil {
+				panic(fmt.Errorf("internal parser error: %v", err))
+			}
+			buf.WriteRune(rune(rc))
+			i += 5
+			continue
+		case 'U':
+			rc, err := strconv.ParseInt(string(text[i+1:i+9]), 16, 32)
+			if err != nil {
+				panic(fmt.Errorf("internal parser error: %v", err))
+			}
+			buf.WriteRune(rune(rc))
+			i += 9
+			continue
+		}
+		buf.WriteByte(c)
+		i++
 	}
 
 	return buf.Bytes()

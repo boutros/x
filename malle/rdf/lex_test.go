@@ -88,6 +88,12 @@ func TestLexer(t *testing.T) {
 		{`<s>"o`, []token{{tokenIRI, []byte("s")}, {tokenError, []byte(`1: unclosed Literal: "\"o"`)}}},
 		{"_:b1", []token{{tokenBNode, []byte("b1")}}},
 		{"_:abc44 <p>", []token{{tokenBNode, []byte("abc44")}, {tokenIRI, []byte("p")}}},
+		{`<http://example/æøå> <http://example/禅> "\"\\\r\n Здра́вствуйте	☺" .`, []token{
+			{tokenIRI, []byte("http://example/æøå")},
+			{tokenIRI, []byte("http://example/禅")},
+			{tokenLiteral, []byte("\"\\\r\n Здра́вствуйте\t☺")},
+			{tokenDot, []byte("")}}},
+		{`"\u006F \U0000006F"`, []token{{tokenLiteral, []byte("o o")}}},
 	}
 
 	for _, tt := range tests {
