@@ -139,10 +139,10 @@ func NewLiteral(val interface{}) (Literal, error) {
 		if len(t) == 0 {
 			return Literal{}, ErrInvalidLiteral
 		}
-		val := make([]byte, len(t)+1)
-		copy(val[1:], []byte(t))
-		val[0] = 0x02
-		return Literal{val: val}, nil
+		b := make([]byte, len(t)+1)
+		copy(b[1:], []byte(t))
+		b[0] = 0x02
+		return Literal{val: b}, nil
 	case int:
 		b := make([]byte, 1+binary.MaxVarintLen64)
 		b[0] = 0x03

@@ -86,8 +86,8 @@ func TestLexer(t *testing.T) {
 	for _, tt := range tests {
 		lex := newLexer(strings.NewReader(tt.in))
 		res := []token{}
-		for _, t := range collect(lex) {
-			res = append(res, t)
+		for _, tok := range collect(lex) {
+			res = append(res, tok)
 		}
 		if res[len(res)-1].Typ == tokenEOL {
 			res = res[:len(res)-1]
