@@ -12,8 +12,6 @@ import (
 type token struct {
 	Typ   tokenType
 	value []byte
-	line  int
-	col   int
 }
 
 type tokenType int
@@ -30,7 +28,8 @@ const (
 
 type lexer struct {
 	r       *bufio.Reader
-	line    []byte
+	input   []byte
+	line    int
 	pos     int
 	start   int
 	escaped bool
@@ -41,37 +40,24 @@ func newLexer(r io.Reader) *lexer {
 }
 
 func (l *lexer) readRune() rune {
-	if l.pos == len(l.line) {
-		line, err := l.r.ReadBytes('\n')
-		if err != nil && len(line) == 0 {
+	if l.pos == len(l.input) {
+		input, err := l.r.ReadBytes('\n')
+		if err != nil && len(input) == 0 {
 			return eof
 		}
-		l.line = line
+		l.input = input
 		l.start = 0
 		l.pos = 0
+		l.line++
 	}
 
-	r, w := utf8.DecodeRune(l.line[l.pos:])
+	r, w := utf8.DecodeRune(l.input[l.pos:])
 	l.pos += w
 	return r
 }
 
 func (l *lexer) emit(typ tokenType) token {
-	s := l.start
-	l.start = l.pos
-
-	if l.escaped {
-		l.escaped = false
-		return token{
-			Typ:   typ,
-			value: unescape(l.line[s:l.pos]),
-		}
-	}
-
-	return token{
-		Typ:   typ,
-		value: unescape(l.line[s:l.pos]),
-	}
+	return l.emitAndIgnore(typ, 0)
 }
 
 func (l *lexer) emitAndIgnore(typ tokenType, ignore int) token {
@@ -82,13 +68,29 @@ func (l *lexer) emitAndIgnore(typ tokenType, ignore int) token {
 		l.escaped = false
 		return token{
 			Typ:   typ,
-			value: unescape(l.line[s : l.pos-ignore]),
+			value: unescape(l.input[s : l.pos-ignore]),
 		}
 	}
 
 	return token{
 		Typ:   typ,
-		value: l.line[s : l.pos-ignore],
+		value: l.input[s : l.pos-ignore],
+	}
+}
+
+func (l *lexer) error(msg string) token {
+	s := l.start
+	l.start = l.pos
+
+	errMsg := fmt.Sprintf("%d: %s: %q", l.line, msg, l.input[s:l.pos])
+
+	if l.escaped {
+		l.escaped = false
+	}
+
+	return token{
+		Typ:   tokenError,
+		value: []byte(errMsg),
 	}
 }
 
@@ -117,7 +119,7 @@ func (l *lexer) next() token {
 			continue
 		case '<':
 			if found := l.consume('>'); !found {
-				return l.emit(tokenError)
+				return l.error("unclosed IRI")
 			}
 			l.start++ // ignore <
 			return l.emitAndIgnore(tokenIRI, 1)
@@ -128,7 +130,7 @@ func (l *lexer) next() token {
 			return l.emit(tokenEOL)
 		case '#':
 			// comments are ignored and not emitted
-			l.pos = len(l.line)
+			l.pos = len(l.input)
 			l.ignore()
 			return l.emit(tokenEOL)
 		case '"':

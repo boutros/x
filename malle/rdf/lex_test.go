@@ -1,22 +1,16 @@
 package rdf
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 )
 
-// testToken is a token without line and column positions,
-// to make it easier to test
-type testToken struct {
-	Typ   tokenType
-	value string
-}
-
-func collect(l *lexer) []testToken {
-	tokens := []testToken{}
+func collect(l *lexer) []token {
+	tokens := []token{}
 	for {
 		tk := l.next()
-		tokens = append(tokens, testToken{tk.Typ, string(tk.value)})
+		tokens = append(tokens, token{tk.Typ, tk.value})
 		if tk.Typ == tokenEOL || tk.Typ == tokenError {
 			break
 		}
@@ -25,7 +19,7 @@ func collect(l *lexer) []testToken {
 	return tokens
 }
 
-func equalTokens(a, b []testToken) bool {
+func equalTokens(a, b []token) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -33,7 +27,7 @@ func equalTokens(a, b []testToken) bool {
 		if a[k].Typ != b[k].Typ {
 			return false
 		}
-		if a[k].value != b[k].value {
+		if !bytes.Equal(a[k].value, b[k].value) {
 			return false
 		}
 	}
@@ -71,23 +65,27 @@ func TestUnescape(t *testing.T) {
 func TestLexer(t *testing.T) {
 	tests := []struct {
 		in   string
-		want []testToken
+		want []token
 	}{
-		{"", []testToken{}},
-		{" \t ", []testToken{}},
-		{"<a>", []testToken{{tokenIRI, "a"}}},
-		{"<a", []testToken{{tokenError, "<a"}}},
-		{" <http://xyz/æøå.123> \t ", []testToken{{tokenIRI, "http://xyz/æøå.123"}}},
-		{"<a><b> <c> .", []testToken{{tokenIRI, "a"}, {tokenIRI, "b"}, {tokenIRI, "c"}, {tokenDot, ""}}},
-		{"# a comment <a>", []testToken{}},
-		{"<a> # a comment <b>", []testToken{{tokenIRI, "a"}}},
-		{`"abc"`, []testToken{{tokenLiteral, "abc"}}},
-		{`"line #1\nline #2"`, []testToken{{tokenLiteral, "line #1\nline #2"}}},
+		{"", []token{}},
+		{" \t ", []token{}},
+		{"<a>", []token{{tokenIRI, []byte("a")}}},
+		{"<a", []token{{tokenError, []byte("1: unclosed IRI: \"<a\"")}}},
+		{" <http://xyz/æøå.123> \t ", []token{{tokenIRI, []byte("http://xyz/æøå.123")}}},
+		{"<a><b> <c> .", []token{
+			{tokenIRI, []byte("a")},
+			{tokenIRI, []byte("b")},
+			{tokenIRI, []byte("c")},
+			{tokenDot, []byte("")}}},
+		{"# a comment <a>", []token{}},
+		{"<a> # a comment <b>", []token{{tokenIRI, []byte("a")}}},
+		{`"abc"`, []token{{tokenLiteral, []byte("abc")}}},
+		{`"line #1\nline #2"`, []token{{tokenLiteral, []byte("line #1\nline #2")}}},
 	}
 
 	for _, tt := range tests {
 		lex := newLexer(strings.NewReader(tt.in))
-		res := []testToken{}
+		res := []token{}
 		for _, t := range collect(lex) {
 			res = append(res, t)
 		}
