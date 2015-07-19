@@ -19,6 +19,7 @@ const eof = -1
 
 const (
 	tokenEOL tokenType = iota
+	tokenEOF
 	tokenError
 	tokenIRI
 	tokenDot
@@ -133,8 +134,10 @@ func (l *lexer) next() token {
 		case '.':
 			l.ignore()
 			return l.emit(tokenDot)
-		case eof:
+		case '\n':
 			return l.emit(tokenEOL)
+		case eof:
+			return l.emit(tokenEOF)
 		case '#':
 			// comments are ignored and not emitted
 			l.pos = len(l.input)

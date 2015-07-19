@@ -11,7 +11,7 @@ func collect(l *lexer) []token {
 	for {
 		tk := l.next()
 		tokens = append(tokens, token{tk.Typ, tk.value})
-		if tk.Typ == tokenEOL || tk.Typ == tokenError {
+		if tk.Typ == tokenEOF || tk.Typ == tokenError {
 			break
 		}
 
@@ -89,7 +89,10 @@ func TestLexer(t *testing.T) {
 		for _, tok := range collect(lex) {
 			res = append(res, tok)
 		}
-		if res[len(res)-1].Typ == tokenEOL {
+		if res[len(res)-1].Typ == tokenEOF {
+			res = res[:len(res)-1]
+		}
+		if len(res) >= 1 && res[len(res)-1].Typ == tokenEOL {
 			res = res[:len(res)-1]
 		}
 
