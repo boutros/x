@@ -7,17 +7,17 @@ import (
 )
 
 // NTDecoder is a decodes RDF triples i N-Triples format.
-type NTDecoder struct {
-	lex *lexer
-}
-
-// NewNTDecoder returns a new NTDecoder on the given stream.
 //
 // Notes and deviations from W3 specification:
 // * IRIs are not validated, except to make sure they are not empty.
 // * Literal values are not validated against their datatype.
 // * Any tokens after triple termination (.) until end of line are ignored.
 // * Triples with blank nodes are ignored.
+type NTDecoder struct {
+	lex *lexer
+}
+
+// NewNTDecoder returns a new NTDecoder on the given stream.
 func NewNTDecoder(r io.Reader) *NTDecoder {
 	return &NTDecoder{lex: newLexer(r)}
 }
