@@ -149,7 +149,35 @@ newLine:
 		copy(b[1:], tok.value)
 		tr.obj = IRI{val: b}
 	} else {
-		panic("TODO parse Literal object")
+		peek := d.lex.next()
+		switch peek.Typ {
+		case tokenDot:
+			// plain literal xsd:String
+			b = make([]byte, len(tok.value)+1)
+			b[0] = 0x02
+			copy(b[1:], tok.value)
+			tr.obj = Literal{val: b}
+			d.ignoreLine()
+			return tr, nil
+		case tokenLang:
+			// rdf:langString
+			ll := len(peek.value)
+			b := make([]byte, len(tok.value)+ll+2)
+			b[0] = 0x01
+			b[1] = uint8(ll)
+			copy(b[2:], []byte(peek.value))
+			copy(b[2+ll:], []byte(tok.value))
+			tr.obj = Literal{val: b}
+		case tokenDTMarker:
+			// typed literal
+			peek = d.lex.next()
+			if peek.Typ != tokenIRI {
+				d.ignoreLine()
+				return Triple{}, fmt.Errorf("%d: expected IRI as literal datatype, got %v: %q", d.lex.line, tok.Typ, string(peek.value))
+			}
+		default:
+			panic("TODO parse Literal object")
+		}
 	}
 
 	// dot+newline/eof

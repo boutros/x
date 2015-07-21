@@ -29,6 +29,29 @@ const (
 	tokenDTMarker
 )
 
+func (t tokenType) String() string {
+	switch t {
+	case tokenEOL:
+		return "EOL"
+	case tokenEOF:
+		return "EOF"
+	case tokenError:
+		return "error"
+	case tokenDot:
+		return "dot (.)"
+	case tokenLiteral:
+		return "literal"
+	case tokenBNode:
+		return "blank node"
+	case tokenLang:
+		return "language tag"
+	case tokenDTMarker:
+		return "datatype marker (^^)"
+	default:
+		panic("TODO tokenType.String()")
+	}
+}
+
 type lexer struct {
 	r       *bufio.Reader
 	input   []byte // current line being lexed
