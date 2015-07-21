@@ -278,9 +278,6 @@ func (l Literal) Bytes() []byte {
 	return l.val
 }
 
-// AsGoType returns the literal in a corresponding Go type.
-//func (l Literal) AsGoType() interface{}
-
 // Triple represents a RDF statement with subject, predicate and object
 type Triple struct {
 	subj IRI
