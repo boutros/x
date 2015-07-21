@@ -148,8 +148,12 @@ func (l *lexer) next() token {
 			l.ignore()
 			return l.emit(tokenEOL)
 		case '"':
+			p := l.pos + 1
 			if found := l.consume('"'); !found {
 				return l.error("unclosed Literal")
+			}
+			if l.pos == p {
+				return l.error("empty literal")
 			}
 			l.start++ // ignore starting "
 			return l.emitAndIgnore(tokenLiteral, 1)

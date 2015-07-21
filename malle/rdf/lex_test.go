@@ -75,7 +75,7 @@ func TestLexer(t *testing.T) {
 			{tokenLiteral, []byte("1")},
 			{tokenDTMarker, []byte("")},
 			{tokenIRI, []byte("a")}}},
-		{`""`, []token{{tokenLiteral, []byte("")}}},
+		{`""`, []token{{tokenError, []byte(`1: empty literal: "\"\""`)}}},
 		{`"xy\z"`, []token{{tokenError, []byte(`1: illegal escape sequence: "\\z"`)}}},
 		{`"\t\r\n\f\b\\\u00b7\u00B7\U000000b7\U000000B7"`, []token{{tokenLiteral, []byte("\t\r\n\f\b\\····")}}},
 		{`"\u00F"`, []token{{tokenError, []byte(`1: illegal escape sequence: "\\u00F"`)}}},
