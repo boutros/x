@@ -41,7 +41,7 @@ func TestLexer(t *testing.T) {
 	}{
 		{"", []token{}},
 		{" \t ", []token{}},
-		{"<>", []token{{tokenIRI, []byte("")}}},
+		{"<>", []token{{tokenError, []byte(`1: empty IRI: "<>"`)}}},
 		{"<a>", []token{{tokenIRI, []byte("a")}}},
 		{"<a", []token{{tokenError, []byte(`1: unclosed IRI: "<a"`)}}},
 		{"a>", []token{{tokenError, []byte(`1: unexpected token: "a>"`)}}},

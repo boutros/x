@@ -126,8 +126,12 @@ func (l *lexer) next() token {
 			l.ignore()
 			continue
 		case '<':
+			p := l.pos + 1
 			if found := l.consume('>'); !found {
 				return l.error("unclosed IRI")
+			}
+			if l.pos == p {
+				return l.error("empty IRI")
 			}
 			l.start++ // ignore <
 			return l.emitAndIgnore(tokenIRI, 1)

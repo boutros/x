@@ -2,6 +2,7 @@ package rdf
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"testing"
 )
@@ -32,6 +33,11 @@ func TestDecodeNT(t *testing.T) {
 			"\n#comment <a> <b> <c> .\n",
 			[]Triple{},
 			[]error{},
+		},
+		{
+			"\n\n\n<>.",
+			[]Triple{},
+			[]error{errors.New(`4: empty IRI: "<>"`)},
 		},
 		{
 			"<s><p><o>.\n<s><p><o2>.",
@@ -93,7 +99,7 @@ func TestDecodeNT(t *testing.T) {
 			t.Errorf("decoding:\n%q\ngot:\n%v\nwant:\n%v", test.input, errs, test.errWant)
 		} else {
 			for i, err := range test.errWant {
-				if errs[i] != err {
+				if errs[i].Error() != err.Error() {
 					t.Errorf("decoding:\n%q\ngot:\n%v\nwant:\n%v", test.input, errs, test.errWant)
 				}
 			}
