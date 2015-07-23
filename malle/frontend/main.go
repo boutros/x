@@ -70,27 +70,47 @@ func main() {
 		tplIndex    = template.Must(template.New("index").Parse(htmlIndex))
 		tplResource = template.Must(template.New("index").Parse(htmlResource))
 		// command line flags:
-		dbFile = flag.String("db", "", "database file")
-		port   = flag.Int("p", 8080, "port to serve from")
-		//import = flag.String("i", "", "import triples from file (n-triples)")
+		dbFile     = flag.String("db", "", "database file")
+		port       = flag.Int("p", 8080, "port to serve from")
+		importFile = flag.String("i", "", "import triples from file (n-triples)")
 	)
 	flag.Parse()
 	if *dbFile == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
-	_, err := os.Stat(*dbFile)
-	if err != nil {
-		log.Fatal(err)
+
+	if *importFile == "" {
+		_, err := os.Stat(*dbFile)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
-	db, err := malle.Init(*dbFile)
 	log.Printf("Initializing triple store from file: %s", *dbFile)
+	db, err := malle.Init(*dbFile)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.Print("Triple store OK")
 	defer db.Close()
+
+	if *importFile != "" {
+		log.Printf("Importing triples from file: %v", *importFile)
+		go func() {
+			f, err := os.Open(*importFile)
+			if err != nil {
+				log.Printf("Cannot open file: %v", err.Error())
+				return
+			}
+			n, err := db.Import(f, 1000, true)
+			if err != nil {
+				log.Printf("Import from %v failed: %v", *importFile, err.Error())
+				return
+			}
+			log.Printf("Done importing %d triples from file %v", n, *importFile)
+		}()
+	}
 
 	log.Printf("DB: %+v", db.Stats())
 	log.Printf("Serving from port %d", *port)

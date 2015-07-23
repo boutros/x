@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"io"
 	"log"
 	"os"
 	"sort"
@@ -333,6 +334,41 @@ func (db *Store) ImportGraph(g rdf.Graph) (err error) {
 		return nil
 	})
 	return err
+}
+
+// Import imports triples from an N-Triples stream, in batches of given size.
+// It will ignore triples with blank nodes and errors. If the logErr flag is set it will log
+// such incidents. It returns the total number of triples imported.
+func (db *Store) Import(r io.Reader, batchSize int, logErr bool) (int, error) {
+	dec := rdf.NewNTDecoder(r)
+	graph := make([]rdf.Triple, 0, batchSize+1)
+	c := 0 // totalt count
+	i := 0 // current batch count
+	for tr, err := dec.Decode(); err != io.EOF; tr, err = dec.Decode() {
+		if err != nil && logErr {
+			log.Println(err.Error())
+			continue
+		}
+		graph = append(graph, tr)
+		i++
+		if i == batchSize {
+			err = db.ImportGraph(graph)
+			if err != nil {
+				return c, err
+			}
+			c += i
+			i = 0
+			graph = graph[0:0]
+		}
+	}
+	if len(graph) > 0 {
+		err := db.ImportGraph(graph)
+		if err != nil {
+			return c, err
+		}
+		c += i
+	}
+	return c, nil
 }
 
 // Query represents a query into the triple store.
