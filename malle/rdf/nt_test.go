@@ -102,12 +102,23 @@ func TestDecodeNT(t *testing.T) {
 			[]Triple{},
 			[]error{errors.New("1: expected IRI as literal datatype, got literal: \"a\"")},
 		},
-		/*{
+		{
+			`<s> <p> "abc"^^<http://www.w3.org/2001/XMLSchema#string>.`,
+			[]Triple{
+				Triple{subj: mustNewIRI("s"), pred: mustNewIRI("p"), obj: mustNewLiteral("abc")}},
+			[]error{},
+		},
+		{
 			`<s> <p> "1"^^<http://www.w3.org/2001/XMLSchema#long>.`,
 			[]Triple{
-				Triple{subj: mustNewIRI("s"), pred: mustNewIRI("p"), obj: mustNewTypedLiteral("1", XSDLong)}},
+				Triple{subj: mustNewIRI("s"), pred: mustNewIRI("p"), obj: mustNewLiteral(1)}},
 			[]error{},
-		},*/
+		},
+		{
+			`<s> <p> "abc"^^<http://www.w3.org/2001/XMLSchema#long>.`,
+			[]Triple{},
+			[]error{errors.New("1: literal does not match its datatype (xsd:long): \"abc\"")},
+		},
 	}
 
 	for _, test := range tests {
@@ -129,7 +140,8 @@ func TestDecodeNT(t *testing.T) {
 		} else {
 			for i, tr := range test.trWant {
 				if !trs[i].Eq(tr) {
-					t.Errorf("decoding:\n%q\ngot:\n%v\nwant:\n%v", test.input, trs, test.trWant)
+					t.Logf("%q\n%q\n", trs[i].Object().Bytes(), test.trWant[i].Object().Bytes())
+					t.Errorf("decoding:\n%q\ngot:\n%v\nwant:\n%v", test.input, trs[i], test.trWant[i])
 				}
 			}
 		}

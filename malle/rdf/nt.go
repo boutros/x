@@ -1,16 +1,19 @@
 package rdf
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 )
 
 // NTDecoder is a decodes RDF triples i N-Triples format.
 //
-// Notes and deviations from W3 specification:
+// Notes and (possible) deviations from W3 specification:
 // * IRIs are not validated, except to make sure they are not empty.
-// * Literal values are not validated against their datatype.
+// * Literal that have any of the XSD datatypes are validated against their datatype;
+//   ex this will fail: "abc"^^<http://www.w3.org/2001/XMLSchema#int>
 // * Any tokens after triple termination (.) until end of line are ignored.
 // * Triples with blank nodes are ignored.
 type NTDecoder struct {
@@ -174,6 +177,27 @@ newLine:
 			if peek.Typ != tokenIRI {
 				d.ignoreLine()
 				return Triple{}, fmt.Errorf("%d: expected IRI as literal datatype, got %v: %q", d.lex.line, tok.Typ, string(peek.value))
+			}
+			switch string(peek.value) {
+			case "http://www.w3.org/2001/XMLSchema#string":
+				b = make([]byte, len(tok.value)+1)
+				b[0] = 0x02
+				copy(b[1:], tok.value)
+				tr.obj = Literal{val: b}
+				d.ignoreLine()
+				return tr, nil
+			case "http://www.w3.org/2001/XMLSchema#long":
+				i, err := strconv.ParseInt(string(tok.value), 10, 64)
+				if err != nil {
+					d.ignoreLine()
+					return Triple{}, fmt.Errorf("%d: literal does not match its datatype (xsd:long): %q", d.lex.line, string(tok.value))
+				}
+				b = make([]byte, 1+binary.MaxVarintLen64)
+				b[0] = 0x03
+				l := binary.PutVarint(b[1:], i)
+				tr.obj = Literal{val: b[:l+1], typed: i}
+			default:
+				// TODO
 			}
 		default:
 			panic("TODO parse Literal object")
