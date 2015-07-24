@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/boutros/x/malle"
 	"github.com/boutros/x/malle/rdf"
@@ -72,7 +73,7 @@ func main() {
 		// command line flags:
 		dbFile     = flag.String("db", "", "database file")
 		port       = flag.Int("p", 8080, "port to serve from")
-		importFile = flag.String("i", "", "import triples from file (n-triples)")
+		importFile = flag.String("import", "", "import triples from file (n-triples)")
 	)
 	flag.Parse()
 	if *dbFile == "" {
@@ -103,12 +104,14 @@ func main() {
 				log.Printf("Cannot open file: %v", err.Error())
 				return
 			}
+			start := time.Now()
 			n, err := db.Import(f, 1000, true)
 			if err != nil {
 				log.Printf("Import from %v failed: %v", *importFile, err.Error())
 				return
 			}
-			log.Printf("Done importing %d triples from file %v", n, *importFile)
+			now := time.Now()
+			log.Printf("Done importing %d triples from file %v in %v", n, *importFile, now.Sub(start))
 		}()
 	}
 
