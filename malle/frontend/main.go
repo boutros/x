@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"unicode/utf8"
 
 	"github.com/boutros/x/malle"
 	"github.com/boutros/x/malle/rdf"
@@ -48,6 +49,7 @@ const htmlResource = `<!DOCTYPE html>
 	<style type="text/css">
 		body { font-family: sans serif; margin: 40px auto; max-width: 1140px; line-height: 1.6; font-size: 18px; color: #222; padding: 0 10px }
 		h1, h2, h3 { line-height: 1.2;}
+		td { padding-right: 2em; }
 	</style>
 </head>
 <body>
@@ -56,8 +58,8 @@ const htmlResource = `<!DOCTYPE html>
 		<table>
 			{{range .}}
 			<tr>
-				<td>{{.Predicate | html}}</td>
-				<td>{{.Object | html}}</td>
+				<td title="{{.Predicate | html}}">{{.Predicate | shortPred}}</td>
+				<td>{{.Object | linkify}}</td>
 			</tr>
 			{{end}}
 		</table>
@@ -66,10 +68,32 @@ const htmlResource = `<!DOCTYPE html>
 </html>`
 
 func main() {
+	funcMap := template.FuncMap{
+		"shortPred": func(t rdf.Term) string {
+			s := t.Value().(string)
+			i := len(s)
+			for r, w := utf8.DecodeLastRuneInString(s[:i]); i > 0; r, w = utf8.DecodeLastRuneInString(s[:i]) {
+				i -= w
+				if r == '#' || r == '/' {
+					return s[i+1:]
+				}
+			}
+			return s
+		},
+		"linkify": func(term rdf.Term) template.HTML {
+			switch t := term.(type) {
+			case rdf.IRI:
+				link := fmt.Sprintf("<a href=\"/describe?IRI=%v\">%v</a>", template.HTMLEscapeString(t.Value().(string)), template.HTMLEscapeString(t.String()))
+				return template.HTML(link)
+			default:
+				return template.HTML(t.String())
+			}
+		},
+	}
 	var (
 		// templates:
 		tplIndex    = template.Must(template.New("index").Parse(htmlIndex))
-		tplResource = template.Must(template.New("index").Parse(htmlResource))
+		tplResource = template.Must(template.New("index").Funcs(funcMap).Parse(htmlResource))
 		// command line flags:
 		dbFile     = flag.String("db", "", "database file")
 		port       = flag.Int("p", 8080, "port to serve from")
