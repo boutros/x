@@ -197,7 +197,12 @@ newLine:
 				l := binary.PutVarint(b[1:], i)
 				tr.obj = Literal{val: b[:l+1], typed: i}
 			default:
-				// TODO
+				b = make([]byte, len(tok.value)+len(peek.value)+2)
+				b[0] = 0xFF
+				b[1] = uint8(len(peek.value))
+				copy(b[2:], peek.value)
+				copy(b[b[1]+2:], tok.value)
+				tr.obj = Literal{val: b}
 			}
 		default:
 			panic("TODO parse Literal object")

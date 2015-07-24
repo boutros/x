@@ -119,6 +119,12 @@ func TestDecodeNT(t *testing.T) {
 			[]Triple{},
 			[]error{errors.New("1: literal does not match its datatype (xsd:long): \"abc\"")},
 		},
+		{
+			`<s> <p> "1"^^<mytype>.`,
+			[]Triple{
+				Triple{subj: mustNewIRI("s"), pred: mustNewIRI("p"), obj: mustNewTypedLiteral("1", mustNewIRI("mytype"))}},
+			[]error{},
+		},
 	}
 
 	for _, test := range tests {
