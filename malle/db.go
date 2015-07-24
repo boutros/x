@@ -465,10 +465,11 @@ func (db *Store) setup() (*Store, error) {
 		// Count number of triples
 		bkt = tx.Bucket(bSPO)
 		cur = bkt.Cursor()
-		bitmap := roaring.NewRoaringBitmap()
+
 		var n uint64
 		for k, v := cur.First(); k != nil; k, v = cur.Next() {
 			if v != nil {
+				bitmap := roaring.NewRoaringBitmap()
 				_, err := bitmap.ReadFrom(bytes.NewReader(v))
 				if err != nil {
 					return err
