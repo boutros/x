@@ -45,11 +45,12 @@ const htmlResource = `<!DOCTYPE html>
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>title</title>
+	<title>{{. | chooseTitle}}</title>
 	<style type="text/css">
 		body { font-family: sans serif; margin: 40px auto; max-width: 1140px; line-height: 1.6; font-size: 18px; color: #222; padding: 0 10px }
 		h1, h2, h3 { line-height: 1.2;}
-		td { padding-right: 2em; }
+		td { padding-right: 2em; vertical-align: top; }
+		.datatype { color: #aaa; }
 	</style>
 </head>
 <body>
@@ -67,27 +68,44 @@ const htmlResource = `<!DOCTYPE html>
 </body>
 </html>`
 
+func shorten(s string) string {
+	i := len(s)
+	for r, w := utf8.DecodeLastRuneInString(s[:i]); i > 0; r, w = utf8.DecodeLastRuneInString(s[:i]) {
+		i -= w
+		if r == '#' || r == '/' {
+			return s[i+1:]
+		}
+	}
+	return s
+}
 func main() {
 	funcMap := template.FuncMap{
 		"shortPred": func(t rdf.Term) string {
 			s := t.Value().(string)
-			i := len(s)
-			for r, w := utf8.DecodeLastRuneInString(s[:i]); i > 0; r, w = utf8.DecodeLastRuneInString(s[:i]) {
-				i -= w
-				if r == '#' || r == '/' {
-					return s[i+1:]
-				}
-			}
-			return s
+			return shorten(s)
 		},
 		"linkify": func(term rdf.Term) template.HTML {
 			switch t := term.(type) {
 			case rdf.IRI:
 				link := fmt.Sprintf("<a href=\"/describe?IRI=%v\">%v</a>", template.HTMLEscapeString(t.Value().(string)), template.HTMLEscapeString(t.String()))
 				return template.HTML(link)
-			default:
-				return template.HTML(t.String())
+			case rdf.Literal:
+				switch t.DataType().Value().(string) {
+				case "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString",
+					"http://www.w3.org/2001/XMLSchema#string":
+					return template.HTML(template.HTMLEscapeString(t.String()))
+				default:
+					literal := fmt.Sprintf("%v <span class=\"datatype\" title=\"%s\">(%v)</span>",
+						t.Value(),
+						template.HTMLEscapeString(t.DataType().Value().(string)),
+						shorten(t.DataType().Value().(string)))
+					return template.HTML(literal)
+				}
 			}
+			panic("unreachable")
+		},
+		"chooseTitle": func(triples []rdf.Triple) string {
+			return "TODO choose title from triples"
 		},
 	}
 	var (
