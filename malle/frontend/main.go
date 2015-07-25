@@ -50,7 +50,7 @@ const htmlResource = `<!DOCTYPE html>
 		body { font-family: sans serif; margin: 40px auto; max-width: 1140px; line-height: 1.6; font-size: 18px; color: #222; padding: 0 10px }
 		h1, h2, h3 { line-height: 1.2;}
 		td { padding-right: 2em; vertical-align: top; }
-		.datatype { color: #aaa; }
+		.grey { color: #aaa; }
 	</style>
 </head>
 <body>
@@ -91,11 +91,15 @@ func main() {
 				return template.HTML(link)
 			case rdf.Literal:
 				switch t.DataType().Value().(string) {
-				case "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString",
-					"http://www.w3.org/2001/XMLSchema#string":
-					return template.HTML(template.HTMLEscapeString(t.String()))
+				case "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString":
+					literal := fmt.Sprintf("%v <span class=\"grey\">@%v</span>",
+						t.Value(),
+						template.HTMLEscapeString(t.Lang()))
+					return template.HTML(literal)
+				case "http://www.w3.org/2001/XMLSchema#string":
+					return template.HTML(template.HTMLEscapeString(t.Value().(string)))
 				default:
-					literal := fmt.Sprintf("%v <span class=\"datatype\" title=\"%s\">(%v)</span>",
+					literal := fmt.Sprintf("%v <span class=\"grey\" title=\"%s\">(%v)</span>",
 						t.Value(),
 						template.HTMLEscapeString(t.DataType().Value().(string)),
 						shorten(t.DataType().Value().(string)))
