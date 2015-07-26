@@ -152,8 +152,14 @@ newLine:
 		copy(b[1:], tok.value)
 		tr.obj = IRI{val: b}
 	} else {
+		// literal
 		peek := d.lex.next()
 		switch peek.Typ {
+		case tokenEOL:
+			return Triple{}, errors.New("expected dot, got EOL")
+		case tokenError:
+			d.ignoreLine()
+			return Triple{}, errors.New(string(peek.value))
 		case tokenDot:
 			// plain literal xsd:String
 			b = make([]byte, len(tok.value)+1)
@@ -184,8 +190,6 @@ newLine:
 				b[0] = 0x02
 				copy(b[1:], tok.value)
 				tr.obj = Literal{val: b}
-				d.ignoreLine()
-				return tr, nil
 			case "http://www.w3.org/2001/XMLSchema#long":
 				i, err := strconv.ParseInt(string(tok.value), 10, 64)
 				if err != nil {

@@ -81,7 +81,7 @@ func TestLexer(t *testing.T) {
 		{`"\u00F"`, []token{{tokenError, []byte(`1: illegal escape sequence: "\\u00F"`)}}},
 		{`"\u123"`, []token{{tokenError, []byte(`1: illegal escape sequence: "\\u123"`)}}},
 		{`"\u123ø."`, []token{{tokenError, []byte(`1: illegal escape sequence: "\\u123ø"`)}}},
-		{"\"line 1\nline 2\"", []token{{tokenError, []byte(`1: unclosed Literal: "\"line 1\n.."`)}}},
+		{"\"line 1\nline 2\"", []token{{tokenError, []byte(`1: unclosed Literal: "\"line 1\n"`)}}},
 	}
 
 	for _, tt := range tests {
