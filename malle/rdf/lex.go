@@ -124,6 +124,9 @@ func (l *lexer) consume(want rune) bool {
 				continue
 			}
 		}
+		if r == '\n' {
+			return false
+		}
 	}
 	return true
 }
