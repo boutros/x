@@ -27,6 +27,7 @@ var (
 	bIdxTerms = []byte("iterms") // term -> uint32
 	bDT       = []byte("dt")     // uint32 -> iri
 	bIdxDT    = []byte("idt")    // iri -> uint32
+
 	// Triple indices:
 	bSPO = []byte("spo") // Subect + Predicate -> bitmap of Object
 	bOSP = []byte("osp") // Object + Subject   -> bitmap of Predicate

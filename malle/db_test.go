@@ -469,9 +469,8 @@ _:b1 <p_2> <o_1> . # triples with blank node are ignored
 # a blank line
 <s_11> <p_1> <o_1> .`
 
-	n, err := testDB.Import(bytes.NewBufferString(graph), 100, false)
+	n, err := testDB.Import(bytes.NewBufferString(graph), 10, false)
 	if err != nil || n != 3 {
 		t.Fatalf("Store.Import(%s) == %d, %v; want 3, <nil>", graph, n, err)
 	}
-
 }
