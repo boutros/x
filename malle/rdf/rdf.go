@@ -353,10 +353,3 @@ func (g Graph) Eq(other Graph) bool {
 //func (g Graph) String() string {}
 
 //func Load(r io.Reader) (Graph, error) {}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
