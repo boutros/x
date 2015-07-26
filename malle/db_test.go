@@ -13,10 +13,7 @@ import (
 	"github.com/tgruben/roaring"
 )
 
-const (
-	seed    = 0x123
-	numIter = 3 // number of random iterations for storing/retrieving tests
-)
+const seed = 0x123
 
 var (
 	testDB *Store
@@ -152,68 +149,64 @@ func TestEncodeDecode(t *testing.T) {
 }
 
 func TestStoreTerm(t *testing.T) {
-	for i := 0; i < numIter; i++ {
-		term := genRandTerm()
-		id, err := testDB.AddTerm(term)
-		if err != nil {
-			t.Fatalf("Store.AddTerm(%v)) == %v; want no error", term, err)
-		}
+	term := genRandTerm()
+	id, err := testDB.AddTerm(term)
+	if err != nil {
+		t.Fatalf("Store.AddTerm(%v)) == %v; want no error", term, err)
+	}
 
-		stored, err := testDB.HasTerm(term)
-		if err != nil {
-			t.Fatalf("Store.HasTerm(%v) == %v; want no error", term, err)
-		}
+	stored, err := testDB.HasTerm(term)
+	if err != nil {
+		t.Fatalf("Store.HasTerm(%v) == %v; want no error", term, err)
+	}
 
-		if !stored {
-			t.Fatalf("Store.AddTerm(%v) didn't store term in database", term)
-		}
+	if !stored {
+		t.Fatalf("Store.AddTerm(%v) didn't store term in database", term)
+	}
 
-		want, err := testDB.GetTerm(id)
-		if err != nil {
-			t.Fatalf("Store.GetTerm(%v)) == %v; want no error", id, err)
-		}
+	want, err := testDB.GetTerm(id)
+	if err != nil {
+		t.Fatalf("Store.GetTerm(%v)) == %v; want no error", id, err)
+	}
 
-		if !term.Eq(want) {
-			t.Fatal("Store.AddTerm returned wrong id")
-		}
+	if !term.Eq(want) {
+		t.Fatal("Store.AddTerm returned wrong id")
+	}
 
-		id2, err := testDB.AddTerm(term)
-		if err != nil {
-			t.Fatalf("Store.AddTerm(%v)) == %v; want no error", term, err)
-		}
+	id2, err := testDB.AddTerm(term)
+	if err != nil {
+		t.Fatalf("Store.AddTerm(%v)) == %v; want no error", term, err)
+	}
 
-		if id2 != id {
-			t.Errorf("Store.AddTerm(%v)) stored exisiting term as a new term", term)
-		}
+	if id2 != id {
+		t.Errorf("Store.AddTerm(%v)) stored exisiting term as a new term", term)
 	}
 }
 
 func TestRemoveTerm(t *testing.T) {
-	for i := 0; i < numIter; i++ {
-		term := genRandTerm()
-		_, err := testDB.AddTerm(term)
-		if err != nil {
-			t.Fatalf("Store.AddTerm(%v)) == %v; want no error", term, err)
-		}
+	term := genRandTerm()
+	_, err := testDB.AddTerm(term)
+	if err != nil {
+		t.Fatalf("Store.AddTerm(%v)) == %v; want no error", term, err)
+	}
 
-		err = testDB.RemoveTerm(term)
-		if err != nil {
-			t.Fatalf("Store.RemoveTerm(%v)) == %v; want no error", term, err)
-		}
+	err = testDB.RemoveTerm(term)
+	if err != nil {
+		t.Fatalf("Store.RemoveTerm(%v)) == %v; want no error", term, err)
+	}
 
-		err = testDB.RemoveTerm(term)
-		if err != ErrNotFound {
-			t.Fatalf("Store.RemoveTerm(%v)) == %v; want no ErrNotFound", term, err)
-		}
+	err = testDB.RemoveTerm(term)
+	if err != ErrNotFound {
+		t.Fatalf("Store.RemoveTerm(%v)) == %v; want no ErrNotFound", term, err)
+	}
 
-		stored, err := testDB.HasTerm(term)
-		if err != nil {
-			t.Fatalf("Store.HasTerm(%v) == %v; want no error", term, err)
-		}
+	stored, err := testDB.HasTerm(term)
+	if err != nil {
+		t.Fatalf("Store.HasTerm(%v) == %v; want no error", term, err)
+	}
 
-		if stored {
-			t.Fatalf("Store.RemoveTerm(%v) didn't remove term from database", term)
-		}
+	if stored {
+		t.Fatalf("Store.RemoveTerm(%v) didn't remove term from database", term)
 	}
 }
 
