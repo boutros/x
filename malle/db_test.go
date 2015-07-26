@@ -148,64 +148,90 @@ func TestEncodeDecode(t *testing.T) {
 	}
 }
 
-func TestStoreTerm(t *testing.T) {
+func TestAddTerm(t *testing.T) {
 	term := genRandTerm()
-	id, err := testDB.AddTerm(term)
+	var err error
+	var id uint32
+	err = testDB.kv.Update(func(tx *bolt.Tx) error {
+		id, err = testDB.addTerm(tx, term)
+		return err
+	})
 	if err != nil {
-		t.Fatalf("Store.AddTerm(%v)) == %v; want no error", term, err)
+		t.Fatalf("Store.addTerm(tx, %v)) == %v; want no error", term, err)
 	}
 
-	stored, err := testDB.HasTerm(term)
-	if err != nil {
-		t.Fatalf("Store.HasTerm(%v) == %v; want no error", term, err)
-	}
+	var stored bool
+	err = testDB.kv.View(func(tx *bolt.Tx) error {
+		stored = testDB.hasTerm(tx, term)
+		return nil
+	})
 
 	if !stored {
-		t.Fatalf("Store.AddTerm(%v) didn't store term in database", term)
+		t.Fatalf("Store.addTerm(%v) didn't store term in database", term)
 	}
 
-	want, err := testDB.GetTerm(id)
+	var want rdf.Term
+	err = testDB.kv.View(func(tx *bolt.Tx) error {
+		want, err = testDB.getTerm(tx, id)
+		return err
+	})
 	if err != nil {
-		t.Fatalf("Store.GetTerm(%v)) == %v; want no error", id, err)
+		t.Fatalf("Store.getTerm(%v)) == %v; want no error", id, err)
 	}
 
 	if !term.Eq(want) {
-		t.Fatal("Store.AddTerm returned wrong id")
+		t.Fatal("Store.addTerm returned wrong id")
 	}
 
-	id2, err := testDB.AddTerm(term)
+	var id2 uint32
+	err = testDB.kv.Update(func(tx *bolt.Tx) error {
+		id2, err = testDB.addTerm(tx, term)
+		return err
+	})
 	if err != nil {
-		t.Fatalf("Store.AddTerm(%v)) == %v; want no error", term, err)
+		t.Fatalf("Store.addTerm(%v)) == %v; want no error", term, err)
 	}
 
 	if id2 != id {
-		t.Errorf("Store.AddTerm(%v)) stored exisiting term as a new term", term)
+		t.Errorf("Store.addTerm(%v)) stored exisiting term as a new term", term)
 	}
 }
 
 func TestRemoveTerm(t *testing.T) {
 	term := genRandTerm()
-	_, err := testDB.AddTerm(term)
+	var err error
+	var id uint32
+	err = testDB.kv.Update(func(tx *bolt.Tx) error {
+		id, err = testDB.addTerm(tx, term)
+		return err
+	})
 	if err != nil {
-		t.Fatalf("Store.AddTerm(%v)) == %v; want no error", term, err)
+		t.Fatalf("Store.addTerm(tx, %v)) == %v; want no error", term, err)
 	}
 
-	err = testDB.RemoveTerm(term)
+	err = testDB.kv.Update(func(tx *bolt.Tx) error {
+		err = testDB.removeTerm(tx, id)
+		return err
+	})
+
 	if err != nil {
-		t.Fatalf("Store.RemoveTerm(%v)) == %v; want no error", term, err)
+		t.Fatalf("Store.removeTerm(%v)) == %v; want no error", id, err)
 	}
 
-	err = testDB.RemoveTerm(term)
+	err = testDB.kv.Update(func(tx *bolt.Tx) error {
+		err = testDB.removeTerm(tx, id)
+		return err
+	})
 	if err != ErrNotFound {
-		t.Fatalf("Store.RemoveTerm(%v)) == %v; want no ErrNotFound", term, err)
+		t.Fatalf("Store.removeTerm(%v)) == %v; want no ErrNotFound", id, err)
 	}
 
-	stored, err := testDB.HasTerm(term)
-	if err != nil {
-		t.Fatalf("Store.HasTerm(%v) == %v; want no error", term, err)
-	}
-
-	if stored {
+	var found bool
+	err = testDB.kv.View(func(tx *bolt.Tx) error {
+		found = testDB.hasTerm(tx, term)
+		return nil
+	})
+	if found {
 		t.Fatalf("Store.RemoveTerm(%v) didn't remove term from database", term)
 	}
 }
@@ -228,19 +254,29 @@ func TestAddTriple(t *testing.T) {
 		t.Fatalf("Store.HasTriple(%v) == %v, %v; want true, nil", tr, exists, err)
 	}
 
-	s, err := testDB.GetID(tr.Subject())
+	var s, p, o uint32
+	err = testDB.kv.View(func(tx *bolt.Tx) error {
+		s, err = testDB.getID(tx, tr.Subject())
+		return err
+	})
 	if err != nil {
 		t.Logf("Store.AddTriple(%v) didn't store all terms", tr)
 		t.Fatalf("Store.GetID(%v) == %v; want no error", s, err)
 	}
 
-	p, err := testDB.GetID(tr.Predicate())
+	err = testDB.kv.View(func(tx *bolt.Tx) error {
+		p, err = testDB.getID(tx, tr.Predicate())
+		return err
+	})
 	if err != nil {
 		t.Logf("Store.AddTriple(%v) didn't store all terms", tr)
 		t.Fatalf("Store.GetID(%v) == %v; want no error", p, err)
 	}
 
-	o, err := testDB.GetID(tr.Object())
+	err = testDB.kv.View(func(tx *bolt.Tx) error {
+		o, err = testDB.getID(tx, tr.Object())
+		return err
+	})
 	if err != nil {
 		t.Logf("Store.AddTriple(%v) didn't store all terms", tr)
 		t.Fatalf("Store.GetID(%v) == %v; want no error", o, err)

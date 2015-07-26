@@ -138,77 +138,6 @@ func (db *Store) Stats() Stats {
 	return st
 }
 
-// AddTerm stores a rdf.Term in the database and returns the id it has been given.
-// If the term allready is stored, it will simply return the id.
-func (db *Store) AddTerm(term rdf.Term) (id uint32, err error) {
-	err = db.kv.Update(func(tx *bolt.Tx) error {
-		id, err = db.addTerm(tx, term)
-		return err
-	})
-	return id, err
-}
-
-// HasTerm checks if the given term is stored.
-func (db *Store) HasTerm(term rdf.Term) (bool, error) {
-	found := false
-	err := db.kv.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(bIdxTerms)
-		id := bkt.Get(db.encode(term))
-		if id != nil {
-			found = true
-		}
-		return nil
-	})
-	return found, err
-}
-
-// GetTerm returns the term for a given ID.
-func (db *Store) GetTerm(id uint32) (rdf.Term, error) {
-	var term rdf.Term
-	err := db.kv.View(func(tx *bolt.Tx) error {
-		bkt := tx.Bucket(bTerms)
-		b := bkt.Get(u32tob(id))
-		if b == nil {
-			return ErrNotFound
-		}
-		term = db.decode(b)
-		return nil
-	})
-	return term, err
-}
-
-// GetID returns the ID of a given term.
-func (db *Store) GetID(term rdf.Term) (id uint32, err error) {
-	err = db.kv.View(func(tx *bolt.Tx) error {
-		id, err = db.getID(tx, term)
-		return err
-	})
-	return id, err
-}
-
-// RemoveTerm removes a rdf.Term from the triple store.
-func (db *Store) RemoveTerm(term rdf.Term) error {
-	err := db.kv.Update(func(tx *bolt.Tx) error {
-		bt := db.encode(term)
-		bkt := tx.Bucket(bIdxTerms)
-		id := bkt.Get(bt)
-		if id == nil {
-			return ErrNotFound
-		}
-		err := bkt.Delete(bt)
-		if err != nil {
-			return err
-		}
-		bkt = tx.Bucket(bTerms)
-		err = bkt.Delete(id)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	return err
-}
-
 // AddTriple stores the given Triple.
 func (db *Store) AddTriple(tr rdf.Triple) error {
 	err := db.kv.Update(func(tx *bolt.Tx) error {
@@ -508,6 +437,28 @@ func (db *Store) getID(tx *bolt.Tx, term rdf.Term) (id uint32, err error) {
 		id = btou32(b)
 	}
 	return id, err
+}
+
+// getTerm returns the term for a given ID.
+func (db *Store) getTerm(tx *bolt.Tx, id uint32) (rdf.Term, error) {
+	var term rdf.Term
+	bkt := tx.Bucket(bTerms)
+	b := bkt.Get(u32tob(id))
+	if b == nil {
+		return term, ErrNotFound
+	}
+	term = db.decode(b)
+	return term, nil
+}
+
+// hasTerm returns trie if the term exists.
+func (db *Store) hasTerm(tx *bolt.Tx, term rdf.Term) bool {
+	bkt := tx.Bucket(bIdxTerms)
+	id := bkt.Get(db.encode(term))
+	if id != nil {
+		return true
+	}
+	return false
 }
 
 // addTerm works like the exported AddTerm, but using the given transaction.
