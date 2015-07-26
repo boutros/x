@@ -274,8 +274,10 @@ func (db *Store) Import(r io.Reader, batchSize int, logErr bool) (int, error) {
 	c := 0 // totalt count
 	i := 0 // current batch count
 	for tr, err := dec.Decode(); err != io.EOF; tr, err = dec.Decode() {
-		if err != nil && logErr {
-			log.Println(err.Error())
+		if err != nil {
+			if logErr {
+				log.Println(err.Error())
+			}
 			continue
 		}
 		graph = append(graph, tr)

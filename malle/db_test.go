@@ -459,3 +459,19 @@ func TestQuery(t *testing.T) {
 		t.Fatalf("Store.Query(NewQuery().Resource(%v)) == \n%v\nwant:\n%v", s, res, g)
 	}
 }
+
+func TestImport(t *testing.T) {
+	graph := `<s_1> <p_1> <o_1> .
+<s_1> <p_1> "abc . # invalid triple
+<s_2> z f . # another invalid triple
+_:b1 <p_2> <o_1> . # triples with blank node are ignored
+<s_1> <p_2> "oz"@fr .
+# a blank line
+<s_11> <p_1> <o_1> .`
+
+	n, err := testDB.Import(bytes.NewBufferString(graph), 100, false)
+	if err != nil || n != 3 {
+		t.Fatalf("Store.Import(%s) == %d, %v; want 3, <nil>", graph, n, err)
+	}
+
+}
