@@ -1,6 +1,9 @@
 package rdf
 
-import "testing"
+import (
+	"bytes"
+	"testing"
+)
 
 func mustNewIRI(iri string) IRI {
 	i, err := NewIRI(iri)
@@ -134,5 +137,21 @@ func TestGraphEq(t *testing.T) {
 		if tt.a.Eq(tt.b) != tt.want {
 			t.Errorf("(%v).Eq(%v) == %v; want %v", tt.a, tt.b, tt.a.Eq(tt.b), tt.want)
 		}
+	}
+}
+
+func TestLoadGraph(t *testing.T) {
+	input := `<s><p><o>.
+<s> <p> :b .
+<s> dc:a "f" . # invalid
+<s> <p> <o2> .`
+	g := Load(bytes.NewBufferString(input))
+
+	want := Graph{
+		Triple{mustNewIRI("s"), mustNewIRI("p"), mustNewIRI("o")},
+		Triple{mustNewIRI("s"), mustNewIRI("p"), mustNewIRI("o2")}}
+
+	if !g.Eq(want) {
+		t.Errorf("Load(%q) => %v; want %v", input, g, want)
 	}
 }

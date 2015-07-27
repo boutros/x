@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"sort"
 )
 
@@ -352,4 +353,16 @@ func (g Graph) Eq(other Graph) bool {
 //func (g Graph) Dump(w io.Writer) error {}
 //func (g Graph) String() string {}
 
-//func Load(r io.Reader) (Graph, error) {}
+// Load reads N-Triples from a stream until EOF and returns the parsed
+// triples as a Graph. Any triples with blank nodes or syntactic errors
+// will be ignored.
+func Load(r io.Reader) Graph {
+	d := NewNTDecoder(r)
+	var trs []Triple
+	for tr, err := d.Decode(); err != io.EOF; tr, err = d.Decode() {
+		if err == nil {
+			trs = append(trs, tr)
+		}
+	}
+	return trs
+}
