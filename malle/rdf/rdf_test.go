@@ -141,6 +141,7 @@ func TestGraphEq(t *testing.T) {
 }
 
 func TestLoadGraph(t *testing.T) {
+	// TODO repeat a triple, it should not be exist twice
 	input := `<s><p><o>.
 <s> <p> :b .
 <s> dc:a "f" . # invalid

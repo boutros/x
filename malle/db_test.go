@@ -436,7 +436,7 @@ func TestStats(t *testing.T) {
 	}
 }
 
-func TestQuery(t *testing.T) {
+func TestResourceQuery(t *testing.T) {
 	s := mustNewIRI("s10")
 	g := rdf.Graph{
 		rdf.NewTriple(s, mustNewIRI("p1"), mustNewLiteral("o1")),
@@ -447,7 +447,7 @@ func TestQuery(t *testing.T) {
 
 	err := testDB.ImportGraph(g)
 	if err != nil {
-		t.Fatalf("Store.LoadGraph(%v) == %v; want no error", g, err)
+		t.Fatalf("Store.ImportGraph(%v) == %v; want no error", g, err)
 	}
 
 	res, err := testDB.Query(NewQuery().Resource(s))
@@ -458,6 +458,36 @@ func TestQuery(t *testing.T) {
 	if !res.Eq(g) {
 		t.Fatalf("Store.Query(NewQuery().Resource(%v)) == \n%v\nwant:\n%v", s, res, g)
 	}
+}
+
+func TestCBDQuery(t *testing.T) {
+	graph := `<z1> <p1> <z2> .
+<z1> <p2> "a" .
+<z1> <p3> "b" .
+<z1> <p4> "c" .
+<z2> <p2> "f" .
+<z3> <p1> <z1> .
+<z3> <p2> "x" .
+`
+
+	_, err := testDB.Import(bytes.NewBufferString(graph), 10, false)
+	if err != nil {
+		t.Fatalf("Store.Import(%s) == %v; want no error", graph, err)
+	}
+	s := mustNewIRI("z1")
+	q := NewQuery().CBD(s, 0)
+
+	want := rdf.Load(bytes.NewBufferString(`<z1> <p1> <z2> .
+<z1> <p2> "a" .
+<z1> <p3> "b" .
+<z1> <p4> "c" .
+<z3> <p1> <z1> .`))
+
+	res, err := testDB.Query(q)
+	if err != nil || !want.Eq(res) {
+		t.Fatalf("Store.Query(NewQuery().CBD(%v, 0)) == %v, %v; want %v, <nil>", s, res, err, want)
+	}
+
 }
 
 func TestImport(t *testing.T) {

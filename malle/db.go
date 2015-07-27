@@ -304,8 +304,10 @@ func (db *Store) Import(r io.Reader, batchSize int, logErr bool) (int, error) {
 }
 
 // Query represents a query into the triple store.
+// A query always returns a rdf.Graph.
 type Query struct {
-	subj rdf.IRI
+	subj  rdf.IRI // starting node
+	depth int
 }
 
 // NewQuery returns a new Query.
@@ -317,6 +319,20 @@ func NewQuery() *Query {
 // IRI as subject. (Same as SPARQL DESCRIBE)
 func (q *Query) Resource(s rdf.IRI) *Query {
 	q.subj = s
+	q.depth = -1
+	return q
+}
+
+// CBD returns a Consise Bounded Description query. A CBD query will
+// return a graph of all the statements where the given IRI is subject
+// or object, and recursivly up to a given depth for any other IRI in the graph
+// when depth is > 0.
+func (q *Query) CBD(s rdf.IRI, depth int) *Query {
+	q.subj = s
+	if depth < 0 {
+		depth = 0
+	}
+	q.depth = depth
 	return q
 }
 
@@ -332,7 +348,7 @@ func (db *Store) Query(q *Query) (g rdf.Graph, err error) {
 		// seek in SPO index
 		sid := btou32(bs)
 		cur := tx.Bucket(bSPO).Cursor()
-	outer:
+	outerSPO:
 		for k, v := cur.Seek(u32tob(sid - 1)); k != nil; k, v = cur.Next() {
 			switch bytes.Compare(k[:4], bs) {
 			case 0:
@@ -357,8 +373,46 @@ func (db *Store) Query(q *Query) (g rdf.Graph, err error) {
 					g = append(g, rdf.NewTriple(q.subj, pred.(rdf.IRI), db.decode(b)))
 				}
 			case 1:
-				break outer
+				break outerSPO
 			}
+		}
+
+		// If doing a CBD query:
+		if q.depth == 0 {
+			// seek in OSP index
+
+			cur := tx.Bucket(bOSP).Cursor()
+		outerOSP:
+			for k, v := cur.Seek(u32tob(sid - 1)); k != nil; k, v = cur.Next() {
+				switch bytes.Compare(k[:4], bs) {
+				case 0:
+					bkt = tx.Bucket(bTerms)
+					b := bkt.Get(k[4:])
+					if b == nil {
+						panic("term should be there!")
+					}
+					subj := db.decode(b)
+					bitmap := roaring.NewRoaringBitmap()
+					_, err = bitmap.ReadFrom(bytes.NewReader(v))
+					if err != nil {
+						return err
+					}
+					it := bitmap.Iterator()
+					for it.HasNext() {
+						o := it.Next()
+						b = bkt.Get(u32tob(o))
+						if b == nil {
+							panic("term should be there!")
+						}
+						g = append(g, rdf.NewTriple(subj.(rdf.IRI), db.decode(b).(rdf.IRI), q.subj))
+					}
+				case 1:
+					break outerOSP
+				}
+			}
+
+		} else if q.depth > 0 {
+			panic("TODO query CBD with depth > 0")
 		}
 
 		return nil
@@ -366,6 +420,7 @@ func (db *Store) Query(q *Query) (g rdf.Graph, err error) {
 	if err == ErrNotFound {
 		return g, nil
 	}
+
 	return g, err
 }
 
