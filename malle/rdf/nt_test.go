@@ -116,8 +116,9 @@ func TestDecodeNT(t *testing.T) {
 		},
 		{
 			`<s> <p> "abc"^^<http://www.w3.org/2001/XMLSchema#long>.`,
-			[]Triple{},
-			[]error{errors.New("1: literal does not match its datatype (xsd:long): \"abc\"")},
+			[]Triple{
+				Triple{subj: mustNewIRI("s"), pred: mustNewIRI("p"), obj: mustNewTypedLiteral("abc", XSDLong)}},
+			[]error{},
 		},
 		{
 			`<s> <p> "1"^^<mytype>.`,

@@ -1,34 +1,35 @@
 package rdf
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"sort"
+	"strconv"
 )
 
 // Exported datatypes
 var (
-	RDFLangString   = IRI{[]byte("\x00http://www.w3.org/1999/02/22-rdf-syntax-ns#langString")} // string 0x01
-	RDFHTML         = IRI{[]byte("\x00http://www.w3.org/1999/02/22-rdf-syntax-ns#HTML")}       // ?
-	RDFXMLLiteral   = IRI{[]byte("\x00http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral")} // ?
-	XSDString       = IRI{[]byte("\x00http://www.w3.org/2001/XMLSchema#string")}               // string 	0x02
-	XSDBoolean      = IRI{[]byte("\x00http://www.w3.org/2001/XMLSchema#boolean")}              // boolean
-	XSDDecimal      = IRI{[]byte("\x00http://www.w3.org/2001/XMLSchema#decimal")}              // big.Float
-	XSDInteger      = IRI{[]byte("\x00http://www.w3.org/2001/XMLSchema#integer")}              // big.Int
-	XSDLong         = IRI{[]byte("\x00http://www.w3.org/2001/XMLSchema#long")}                 // int64 	0x03
-	XSDUnsignedLong = IRI{[]byte("\x00http://www.w3.org/2001/XMLSchema#unsignedLong")}         // uint64 	0x04
+	RDFLangString   = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#langString") // string 0x01
+	RDFHTML         = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#HTML")       // ?
+	RDFXMLLiteral   = IRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral") // ?
+	XSDString       = IRI("http://www.w3.org/2001/XMLSchema#string")               // string 	0x02
+	XSDBoolean      = IRI("http://www.w3.org/2001/XMLSchema#boolean")              // boolean
+	XSDDecimal      = IRI("http://www.w3.org/2001/XMLSchema#decimal")              // big.Float
+	XSDInteger      = IRI("http://www.w3.org/2001/XMLSchema#integer")              // big.Int
+	XSDLong         = IRI("http://www.w3.org/2001/XMLSchema#long")                 // int64 	0x03
+	XSDUnsignedLong = IRI("http://www.w3.org/2001/XMLSchema#unsignedLong")         // uint64 	0x04
 	// ...
 	// TODO all RDF-compatible xsd datatypes
 )
 
 // Exported errors
 var (
-	ErrUndecodable    = errors.New("rdf: cannot decode bytes into Term")
-	ErrInvalidIRI     = errors.New("rdf: invalid IRI: cannot be empty")
-	ErrInvalidLiteral = errors.New("rdf: invalid Literal: cannot be empty")
+	ErrUndecodable        = errors.New("rdf: cannot decode bytes into Term")
+	ErrInvalidIRI         = errors.New("rdf: invalid IRI: cannot be empty")
+	ErrInvalidLiteral     = errors.New("rdf: invalid Literal: cannot be empty")
+	ErrInvalidLangLiteral = errors.New("rdf: invalid rdf:LangLiteral: language cannot be empty")
 )
 
 // Term represents a RDF Term
@@ -43,6 +44,7 @@ type Term interface {
 	Value() interface{}
 
 	// Eq tests if two terms are equal.
+	// TODO remove when structs are comparable with ==
 	Eq(Term) bool
 }
 
@@ -52,73 +54,56 @@ func DecodeTerm(b []byte) (Term, error) {
 		return nil, ErrUndecodable
 	}
 	switch b[0] {
-	// IRI
-	case 0x00:
-		iri := make([]byte, len(b))
-		copy(iri, b)
-		return IRI{iri}, nil
-	// rdf:langString
-	case 0x01:
+	case 0x00: // IRI
+		return IRI(string(b[1:])), nil
+	case 0x01: // rdf:langString
 		if len(b) <= 2 || len(b) < int(b[1])+1 {
 			return nil, ErrUndecodable
 		}
 		if int(b[1]) == 0 {
 			// an empty language tag - consider it an xsd:String
 			// TODO or return ErrUndecodable?
-			val := make([]byte, len(b)-1)
-			val[0] = 0x02
-			copy(val[1:], b[2:])
-			return Literal{val: val}, nil
+			return Literal{val: string(b[2:]), datatype: XSDString}, nil
 		}
-		val := make([]byte, len(b))
-		copy(val, b)
-		return Literal{val: val}, nil
-	// xsd:String
-	case 0x02:
-		val := make([]byte, len(b))
-		copy(val, b)
-		return Literal{val: val}, nil
-	// Other typed literals
-	case 0xFF:
-		ll := int(b[1]) + 2
-		iri := make([]byte, ll-1)
-		copy(iri[1:], b[2:ll])
-		val := make([]byte, len(b))
-		copy(val, b)
-		return Literal{val: val}, nil
+		ll := 2 + b[1]
+		return Literal{val: string(b[ll:]), lang: string(b[2:ll]), datatype: RDFLangString}, nil
+	case 0x02: // xsd:String
+		return Literal{val: string(b[1:]), datatype: XSDString}, nil
+	case 0xFF: // Other typed literals
+		ll := int(b[1])
+		return Literal{val: string(b[2+ll:]), datatype: IRI(string(b[2 : 2+ll]))}, nil
 	default:
-		panic("TODO")
+		panic("TODO DecodeTerm")
 	}
 }
 
 // IRI represents a IRI resource.
-type IRI struct {
-	val []byte
-}
+type IRI string
 
-// NewIRI return a new IRI.
+// NewIRI return a new IRI. It cannot be empty.
 func NewIRI(iri string) (IRI, error) {
 	if len(iri) == 0 {
-		return IRI{}, ErrInvalidIRI
+		return IRI(""), ErrInvalidIRI
 	}
-	b := make([]byte, len(iri)+1)
-	copy(b[1:], []byte(iri))
-	return IRI{val: b}, nil
+	return IRI(iri), nil
 }
 
 // Bytes returns the IRIs encoded byte representation.
 func (i IRI) Bytes() []byte {
-	return i.val
+	b := make([]byte, len(i)+1)
+	// b[0] = 0x00 - allready zero value of []byte
+	copy(b[1:], []byte(i))
+	return b
 }
 
 // String returns a N-Triples serialization of an IRI.
 func (i IRI) String() string {
-	return fmt.Sprintf("<%s>", string(i.val[1:]))
+	return "<" + string(i) + ">"
 }
 
 // Value returns the IRI as a string.
 func (i IRI) Value() interface{} {
-	return string(i.val[1:])
+	return i
 }
 
 // Eq tests if IRI is equal to another Term.
@@ -127,9 +112,11 @@ func (i IRI) Eq(other Term) bool {
 }
 
 // Literal represents a RDF Literal.
+// TODO consider split into LangLiteral and TypedLiteral
 type Literal struct {
-	val   []byte
-	typed interface{}
+	val      string
+	lang     string
+	datatype IRI
 }
 
 // NewLiteral returns a new Literal, with a datatype infered from the type of the value,
@@ -140,22 +127,14 @@ func NewLiteral(val interface{}) (Literal, error) {
 		if len(t) == 0 {
 			return Literal{}, ErrInvalidLiteral
 		}
-		b := make([]byte, len(t)+1)
-		copy(b[1:], []byte(t))
-		b[0] = 0x02
-		return Literal{val: b}, nil
+		return Literal{val: t, datatype: XSDString}, nil
 	case int:
-		b := make([]byte, 1+binary.MaxVarintLen64)
-		b[0] = 0x03
-		l := binary.PutVarint(b[1:], int64(t))
-		return Literal{val: b[0 : l+1]}, nil
+		return Literal{val: strconv.Itoa(t), datatype: XSDLong}, nil
 	case uint:
-		b := make([]byte, 1+binary.MaxVarintLen64)
-		b[0] = 0x04
-		l := binary.PutUvarint(b[1:], uint64(t))
-		return Literal{val: b[0 : l+1]}, nil
+		return Literal{val: strconv.FormatUint(uint64(t), 10), datatype: XSDUnsignedLong}, nil
+	default:
+		panic("NewLiteral: TODO")
 	}
-	panic("NewLiteral: TODO")
 }
 
 // NewLangLiteral returns a new Literal of type RDFLangString with given language tag.
@@ -165,18 +144,9 @@ func NewLangLiteral(val string, lang string) (Literal, error) {
 		return Literal{}, ErrInvalidLiteral
 	}
 	if len(lang) == 0 {
-		b := make([]byte, len(val)+1)
-		b[1] = 0x02
-		copy(b, []byte(val))
-		return Literal{val: b}, nil
+		return Literal{}, ErrInvalidLangLiteral
 	}
-	b := make([]byte, len(val)+len(lang)+2)
-	b[0] = 0x01
-	ll := len(lang)
-	b[1] = uint8(ll)
-	copy(b[2:], []byte(lang))
-	copy(b[2+ll:], []byte(val))
-	return Literal{val: b}, nil
+	return Literal{val: val, lang: lang, datatype: RDFLangString}, nil
 }
 
 // NewTypedLiteral returns a new Literal with the given datatype.
@@ -184,99 +154,91 @@ func NewTypedLiteral(val string, typ IRI) (Literal, error) {
 	if len(val) == 0 {
 		return Literal{}, ErrInvalidLiteral
 	}
-	if typ.Eq(XSDString) {
-		b := make([]byte, len(val)+1)
-		b[0] = 0x02
-		copy(b[1:], []byte(val))
-		return Literal{val: b}, nil
-	} // elsif other xsd types
-	b := make([]byte, len(val)+len(typ.val)+1)
-	b[0] = 0xFF
-	b[1] = uint8(len(typ.val) - 1)
-	copy(b[2:], typ.val[1:])
-	copy(b[b[1]+2:], []byte(val))
-	return Literal{val: b}, nil
+	return Literal{val: val, datatype: typ}, nil
 }
 
 // DataType returns the DataType IRI of the Literal.
 func (l Literal) DataType() IRI {
-	switch l.val[0] {
-	case 0x01:
-		return RDFLangString
-	case 0x02:
-		return XSDString
-	case 0x03:
-		return XSDLong
-	case 0x04:
-		return XSDUnsignedLong
-	case 0xFF:
-		b := make([]byte, l.val[1]+1)
-		copy(b[1:], l.val[2:l.val[1]+2])
-		return IRI{b}
-	}
-	panic("TODO Literal.DataType() not string, langstring or other")
+	return l.datatype
 }
 
 // Lang returns the language tag of a literal, or an empty string
 // if it is not of type RDFLangString.
 func (l Literal) Lang() string {
-	if l.val[0] == 0x01 {
-		return string(l.val[2 : l.val[1]+2])
-	}
-	return ""
+	return l.lang
 }
 
 // String returns a N-Triples serialization of a Literal.
 func (l Literal) String() string {
-	switch l.val[0] {
-	case 0x01:
-		lang := l.Lang()
-		return fmt.Sprintf("\"%s\"@%s", string(l.val[2+len(lang):]), lang)
-	case 0x02:
-		return fmt.Sprintf("\"%s\"", string(l.val[1:]))
-	case 0x03:
-		return fmt.Sprintf("\"%d\"^^%s", l.Value(), l.DataType().String())
-	case 0x04:
-		return fmt.Sprintf("\"%d\"^^%s", l.Value(), l.DataType().String())
-	case 0xFF:
-		dt := l.DataType().String()
-		return fmt.Sprintf("\"%s\"^^%s", string(l.val[len(dt):]), dt)
+	switch l.datatype {
+	case RDFLangString:
+		return fmt.Sprintf("\"%s\"@%s", l.val, l.lang)
+	case XSDString:
+		return fmt.Sprintf("\"%s\"", l.val)
+	case XSDLong, XSDUnsignedLong:
+		return fmt.Sprintf("\"%s\"^^%s", l.val, l.datatype)
+	default:
+		return fmt.Sprintf("\"%s\"^^%s", l.val, l.datatype)
 	}
-
-	panic("TODO Literal.String() not langstring, string, other")
 }
 
 // Value returns the Literal as a Go-typed value
 func (l Literal) Value() interface{} {
-	if l.typed == nil {
-		switch l.val[0] {
-		case 0x01:
-			l.typed = string(l.val[2+len(l.Lang()):])
-		case 0x02:
-			l.typed = string(l.val[1:])
-		case 0x03:
-			i, _ := binary.Varint(l.val[1:])
-			l.typed = i
-		case 0x04:
-			i, _ := binary.Uvarint(l.val[1:])
-			l.typed = i
-		case 0xFF:
-			l.typed = string(l.val[len(l.DataType().String()):])
-		default:
-			panic("TODO Literal.Value()")
-		}
+	switch l.datatype {
+	case RDFLangString, XSDString:
+		return l.val
+	case XSDLong:
+		i, _ := strconv.ParseInt(l.val, 10, 0)
+		return i
+	case XSDUnsignedLong:
+		i, _ := strconv.ParseUint(l.val, 10, 0)
+		return i
+	default:
+		return l.val
 	}
-	return l.typed
 }
 
 // Eq tests if the Literal is equal to another Term.
 func (l Literal) Eq(other Term) bool {
-	return other != nil && bytes.Equal(l.Bytes(), other.Bytes())
+	return other != nil && l.String() == other.String()
 }
 
 // Bytes return the Literal's encoded byte representation.
 func (l Literal) Bytes() []byte {
-	return l.val
+	switch l.datatype {
+	case XSDString:
+		b := make([]byte, len(l.val)+1)
+		copy(b[1:], []byte(l.val))
+		b[0] = 0x02
+		return b
+	case RDFLangString:
+		ll := len(l.lang)
+		b := make([]byte, len(l.val)+ll+2)
+		b[0] = 0x01
+		b[1] = uint8(ll)
+		copy(b[2:], []byte(l.lang))
+		copy(b[2+ll:], []byte(l.val))
+		return b
+	case XSDLong:
+		v, _ := strconv.Atoi(l.val)
+		b := make([]byte, 1+binary.MaxVarintLen64)
+		b[0] = 0x03
+		l := binary.PutVarint(b[1:], int64(v))
+		return b[0 : l+1]
+	case XSDUnsignedLong:
+		v, _ := strconv.Atoi(l.val)
+		b := make([]byte, 1+binary.MaxVarintLen64)
+		b[0] = 0x04
+		l := binary.PutUvarint(b[1:], uint64(v))
+		return b[0 : l+1]
+	default:
+		b := make([]byte, len(l.val)+len(l.datatype)+2)
+		b[0] = 0xFF
+		b[1] = uint8(len(l.datatype))
+		copy(b[2:], []byte(l.datatype))
+		copy(b[b[1]+2:], []byte(l.val))
+		return b
+	}
 }
 
 // Triple represents a RDF statement with subject, predicate and object
@@ -323,16 +285,23 @@ func (t Triple) Eq(other Triple) bool {
 }
 
 // Graph is a collection of triples.
-type Graph []Triple
+type Graph map[IRI]map[IRI]Terms
 
-// Len satisfies the Sort interface for Graph.
-func (g Graph) Len() int { return len(g) }
+// NewGraph returns a new graph.
+func NewGraph() Graph {
+	return make(map[IRI]map[IRI]Terms)
+}
 
-// Swap satisfies the Sort interface for Graph.
-func (g Graph) Swap(i, j int) { g[i], g[j] = g[j], g[i] }
-
-// Less satisfies the Sort interface for Graph.
-func (g Graph) Less(i, j int) bool { return g[i].String() < g[j].String() }
+// Size returns the number of triples in the graph.
+func (g Graph) Size() int {
+	n := 0
+	for _, props := range g {
+		for _, vals := range props {
+			n += len(vals)
+		}
+	}
+	return n
+}
 
 // Eq tests for equality between graphs, meaning that they contain
 // the same triples, and no graph has triples not in the other graph.
@@ -340,14 +309,75 @@ func (g Graph) Eq(other Graph) bool {
 	if len(g) != len(other) {
 		return false
 	}
-	sort.Sort(g)
-	sort.Sort(other)
-	for i, tr := range g {
-		if !tr.Eq(other[i]) {
+	for subj, props := range g {
+		if _, ok := other[subj]; !ok {
+			return false
+		}
+		for pred, terms := range props {
+			if _, ok := other[subj][pred]; !ok {
+				return false
+			}
+			if !eqTerms(terms, other[subj][pred]) {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// eqTerms checks if two Terms contains the same triples.
+func eqTerms(a, b Terms) bool {
+	sort.Sort(a)
+	sort.Sort(b)
+	for i, t := range a {
+		if !t.Eq(b[i]) {
 			return false
 		}
 	}
 	return true
+}
+
+// Terms is a slice of []Term. (Nessecary to make it sortable)
+type Terms []Term
+
+// Len satisfies the Sort interface for Terms.
+func (t Terms) Len() int { return len(t) }
+
+// Swap satisfies the Sort interface for Terms.
+func (t Terms) Swap(i, j int) { t[i], t[j] = t[j], t[i] }
+
+// Less satisfies the Sort interface for Terms.
+func (t Terms) Less(i, j int) bool { return t[i].String() < t[j].String() }
+
+// Add adds a triple to the graph
+func (g Graph) Add(t Triple) Graph {
+	if _, ok := g[t.subj]; ok {
+		// subject exists
+		if terms, ok := g[t.subj][t.pred]; ok {
+			// predicate exists
+			for _, term := range terms {
+				if term.Eq(t.obj) {
+					// triple allready in graph
+					return g
+				}
+			}
+			// add object
+			g[t.subj][t.pred] = append(g[t.subj][t.pred], t.obj)
+		} else {
+			// new predicate for subject
+			g[t.subj][t.pred] = make(Terms, 0, 1)
+			// add object
+			g[t.subj][t.pred] = append(g[t.subj][t.pred], t.obj)
+		}
+	} else {
+		// new subject
+		g[t.subj] = make(map[IRI]Terms)
+		// add predicate
+		g[t.subj][t.pred] = make(Terms, 0, 1)
+		// add object
+		g[t.subj][t.pred] = append(g[t.subj][t.pred], t.obj)
+	}
+	return g
 }
 
 //func (g Graph) Dump(w io.Writer) error {}
@@ -358,11 +388,11 @@ func (g Graph) Eq(other Graph) bool {
 // will be ignored.
 func Load(r io.Reader) Graph {
 	d := NewNTDecoder(r)
-	var trs []Triple
+	g := NewGraph()
 	for tr, err := d.Decode(); err != io.EOF; tr, err = d.Decode() {
 		if err == nil {
-			trs = append(trs, tr)
+			g.Add(tr)
 		}
 	}
-	return trs
+	return g
 }

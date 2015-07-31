@@ -126,12 +126,36 @@ func TestGraphEq(t *testing.T) {
 		b    Graph
 		want bool
 	}{
-		{Graph{}, Graph{}, true},
-		{Graph{Triple{s1, p1, o1}}, Graph{Triple{s1, p1, o1}}, true},
-		{Graph{Triple{s1, p1, o1}}, Graph{Triple{s1, p1, o2}}, false},
-		{Graph{Triple{s1, p1, o1}, Triple{s2, p1, o1}}, Graph{Triple{s2, p1, o1}, Triple{s1, p1, o1}}, true},
-		{Graph{Triple{s1, p1, o1}, Triple{s1, p2, o1}, Triple{s2, p2, o2}}, Graph{Triple{s2, p2, o2}, Triple{s1, p2, o1}, Triple{s1, p1, o1}}, true},
-		{Graph{Triple{s1, p1, o1}, Triple{s1, p2, o1}, Triple{s2, p2, o2}}, Graph{Triple{s2, p2, o2}, Triple{s1, p2, o2}, Triple{s1, p1, o1}}, false},
+		{
+			NewGraph(),
+			NewGraph(),
+			true,
+		},
+		{
+			NewGraph().Add(Triple{s1, p1, o1}),
+			NewGraph().Add(Triple{s1, p1, o1}),
+			true,
+		},
+		{
+			NewGraph().Add(Triple{s1, p1, o1}),
+			NewGraph().Add(Triple{s1, p1, o2}),
+			false,
+		},
+		{
+			NewGraph().Add(Triple{s1, p1, o1}).Add(Triple{s2, p1, o1}),
+			NewGraph().Add(Triple{s2, p1, o1}).Add(Triple{s1, p1, o1}),
+			true,
+		},
+		{
+			NewGraph().Add(Triple{s1, p1, o1}).Add(Triple{s2, p1, o1}).Add(Triple{s2, p2, o2}),
+			NewGraph().Add(Triple{s2, p2, o2}).Add(Triple{s2, p1, o1}).Add(Triple{s1, p1, o1}),
+			true,
+		},
+		{
+			NewGraph().Add(Triple{s1, p1, o1}).Add(Triple{s2, p2, o1}).Add(Triple{s2, p2, o2}),
+			NewGraph().Add(Triple{s2, p2, o2}).Add(Triple{s1, p2, o2}).Add(Triple{s1, p1, o1}),
+			false,
+		},
 	}
 	for _, tt := range tests {
 		if tt.a.Eq(tt.b) != tt.want {
@@ -148,9 +172,9 @@ func TestLoadGraph(t *testing.T) {
 <s> <p> <o2> .`
 	g := Load(bytes.NewBufferString(input))
 
-	want := Graph{
-		Triple{mustNewIRI("s"), mustNewIRI("p"), mustNewIRI("o")},
-		Triple{mustNewIRI("s"), mustNewIRI("p"), mustNewIRI("o2")}}
+	want := NewGraph().
+		Add(Triple{mustNewIRI("s"), mustNewIRI("p"), mustNewIRI("o")}).
+		Add(Triple{mustNewIRI("s"), mustNewIRI("p"), mustNewIRI("o2")})
 
 	if !g.Eq(want) {
 		t.Errorf("Load(%q) => %v; want %v", input, g, want)

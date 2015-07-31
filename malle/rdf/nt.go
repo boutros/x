@@ -1,19 +1,17 @@
 package rdf
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 )
 
 // NTDecoder is a decodes RDF triples i N-Triples format.
 //
 // Notes and (possible) deviations from W3 specification:
 // * IRIs are not validated, except to make sure they are not empty.
-// * Literal that have any of the XSD datatypes are validated against their datatype;
-//   ex this will fail: "abc"^^<http://www.w3.org/2001/XMLSchema#int>
+// * Literal that have any of the XSD datatypes are not validated against their datatype;
+//   ex this will not fail: "abc"^^<http://www.w3.org/2001/XMLSchema#int>
 // * Any tokens after triple termination (.) until end of line are ignored.
 // * Triples with blank nodes are ignored.
 type NTDecoder struct {
@@ -118,9 +116,7 @@ newLine:
 		goto newLine
 	}
 
-	b := make([]byte, len(tok.value)+1)
-	copy(b[1:], tok.value)
-	tr.subj = IRI{val: b}
+	tr.subj = IRI(tok.value)
 
 	// predicate
 	tok, err = d.parsePredicate()
@@ -133,9 +129,7 @@ newLine:
 		goto newLine
 	}
 
-	b = make([]byte, len(tok.value)+1)
-	copy(b[1:], tok.value)
-	tr.pred = IRI{val: b}
+	tr.pred = IRI(tok.value)
 
 	// object
 	tok, err = d.parseObject()
@@ -148,9 +142,7 @@ newLine:
 		goto newLine
 	}
 	if tok.Typ == tokenIRI {
-		b = make([]byte, len(tok.value)+1)
-		copy(b[1:], tok.value)
-		tr.obj = IRI{val: b}
+		tr.obj = IRI(tok.value)
 	} else {
 		// literal
 		peek := d.lex.next()
@@ -162,21 +154,12 @@ newLine:
 			return Triple{}, errors.New(string(peek.value))
 		case tokenDot:
 			// plain literal xsd:String
-			b = make([]byte, len(tok.value)+1)
-			b[0] = 0x02
-			copy(b[1:], tok.value)
-			tr.obj = Literal{val: b}
+			tr.obj = Literal{val: tok.value, datatype: XSDString}
 			d.ignoreLine()
 			return tr, nil
 		case tokenLang:
 			// rdf:langString
-			ll := len(peek.value)
-			b := make([]byte, len(tok.value)+ll+2)
-			b[0] = 0x01
-			b[1] = uint8(ll)
-			copy(b[2:], []byte(peek.value))
-			copy(b[2+ll:], []byte(tok.value))
-			tr.obj = Literal{val: b}
+			tr.obj = Literal{val: tok.value, lang: peek.value, datatype: RDFLangString}
 		case tokenDTMarker:
 			// typed literal
 			peek = d.lex.next()
@@ -186,27 +169,11 @@ newLine:
 			}
 			switch string(peek.value) {
 			case "http://www.w3.org/2001/XMLSchema#string":
-				b = make([]byte, len(tok.value)+1)
-				b[0] = 0x02
-				copy(b[1:], tok.value)
-				tr.obj = Literal{val: b}
+				tr.obj = Literal{val: tok.value, datatype: XSDString}
 			case "http://www.w3.org/2001/XMLSchema#long":
-				i, err := strconv.ParseInt(string(tok.value), 10, 64)
-				if err != nil {
-					d.ignoreLine()
-					return Triple{}, fmt.Errorf("%d: literal does not match its datatype (xsd:long): %q", d.lex.line, string(tok.value))
-				}
-				b = make([]byte, 1+binary.MaxVarintLen64)
-				b[0] = 0x03
-				l := binary.PutVarint(b[1:], i)
-				tr.obj = Literal{val: b[:l+1], typed: i}
+				tr.obj = Literal{val: tok.value, datatype: XSDLong}
 			default:
-				b = make([]byte, len(tok.value)+len(peek.value)+2)
-				b[0] = 0xFF
-				b[1] = uint8(len(peek.value))
-				copy(b[2:], peek.value)
-				copy(b[b[1]+2:], tok.value)
-				tr.obj = Literal{val: b}
+				tr.obj = Literal{val: tok.value, datatype: IRI(peek.value)}
 			}
 		default:
 			panic("TODO parse Literal object")

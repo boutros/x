@@ -10,7 +10,7 @@ import (
 
 type token struct {
 	Typ   tokenType
-	value []byte
+	value string
 }
 
 type tokenType int
@@ -54,7 +54,7 @@ func (t tokenType) String() string {
 
 type lexer struct {
 	r       *bufio.Reader
-	input   []byte // current line being lexed
+	input   string // current line being lexed
 	line    int    // current line number
 	pos     int    // position in line (in bytes, not runes)
 	start   int    // start of current token
@@ -67,7 +67,7 @@ func newLexer(r io.Reader) *lexer {
 
 func (l *lexer) readRune() rune {
 	if l.pos == len(l.input) {
-		input, err := l.r.ReadBytes('\n')
+		input, err := l.r.ReadString('\n')
 		if err != nil && len(input) == 0 {
 			return eof
 		}
@@ -77,7 +77,7 @@ func (l *lexer) readRune() rune {
 		l.line++
 	}
 
-	r, w := utf8.DecodeRune(l.input[l.pos:])
+	r, w := utf8.DecodeRuneInString(l.input[l.pos:])
 	l.pos += w
 	return r
 }
@@ -105,7 +105,7 @@ func (l *lexer) error(msg string) token {
 
 	return token{
 		Typ:   tokenError,
-		value: []byte(errMsg),
+		value: errMsg,
 	}
 }
 
@@ -217,7 +217,7 @@ func (l *lexer) next() token {
 	}
 }
 
-func (l *lexer) unescape(typ tokenType, val []byte) token {
+func (l *lexer) unescape(typ tokenType, val string) token {
 	if !l.escaped {
 		return token{Typ: typ, value: val}
 	}
@@ -232,10 +232,10 @@ func (l *lexer) unescape(typ tokenType, val []byte) token {
 	}
 }
 
-func (l *lexer) unescapeLiteral(typ tokenType, text []byte) token {
+func (l *lexer) unescapeLiteral(typ tokenType, text string) token {
 	buf := bytes.NewBuffer(make([]byte, 0, len(text)))
 	i := 0
-	for r, w := utf8.DecodeRune(text[i:]); w != 0; r, w = utf8.DecodeRune(text[i:]) {
+	for r, w := utf8.DecodeRuneInString(text[i:]); w != 0; r, w = utf8.DecodeRuneInString(text[i:]) {
 		if r != '\\' {
 			buf.WriteRune(r)
 			i += w
@@ -272,7 +272,7 @@ func (l *lexer) unescapeLiteral(typ tokenType, text []byte) token {
 				if i == len(text) {
 					return token{
 						Typ:   tokenError,
-						value: []byte(fmt.Sprintf("%d: illegal escape sequence: %q", l.line, text[start-1:i]))}
+						value: fmt.Sprintf("%d: illegal escape sequence: %q", l.line, text[start-1:i])}
 				}
 				x := uint64(text[i])
 				if x >= 'a' {
@@ -284,12 +284,12 @@ func (l *lexer) unescapeLiteral(typ tokenType, text []byte) token {
 				}
 				if 0 > d1 || d1 > 15 {
 					j := i
-					for !utf8.FullRune(text[j:i]) {
+					for !utf8.FullRuneInString(text[j:i]) {
 						i++
 					}
 					return token{
 						Typ:   tokenError,
-						value: []byte(fmt.Sprintf("%d: illegal escape sequence: %q", l.line, text[start-1:i]))}
+						value: fmt.Sprintf("%d: illegal escape sequence: %q", l.line, text[start-1:i])}
 				}
 				d = (16 * d) + d1
 			}
@@ -299,11 +299,11 @@ func (l *lexer) unescapeLiteral(typ tokenType, text []byte) token {
 		default:
 			return token{
 				Typ:   tokenError,
-				value: []byte(fmt.Sprintf("%d: illegal escape sequence: %q", l.line, text[i-1:]))}
+				value: fmt.Sprintf("%d: illegal escape sequence: %q", l.line, text[i-1:])}
 		}
 		buf.WriteByte(c)
 		i++
 	}
 
-	return token{Typ: typ, value: buf.Bytes()}
+	return token{Typ: typ, value: buf.String()}
 }
