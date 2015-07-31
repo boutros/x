@@ -173,16 +173,16 @@ func main() {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		res, err := db.Query(malle.NewQuery().Resource(iri))
+		graph, err := db.Query(malle.NewQuery().Resource(iri))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if res == nil || len(res) == 0 {
+		if graph == nil || graph.IsEmpty() {
 			http.Error(w, "No triples found", http.StatusNotFound)
 			return
 		}
-		tplResource.Execute(w, res)
+		tplResource.Execute(w, graph.Triples())
 	})
 	err = http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 	if err != nil {

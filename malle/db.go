@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"os"
-	"sort"
 	"sync/atomic"
 
 	"github.com/boltdb/bolt"
@@ -232,11 +231,12 @@ func (db *Store) HasTriple(tr rdf.Triple) (exists bool, err error) {
 	return exists, err
 }
 
-// ImportGraph stores all the graph's triples in the store.
-func (db *Store) ImportGraph(g rdf.Graph) (err error) {
-	sort.Sort(g)
+//func (db *Store) ImportGraph(g rdf.Graph) (err error) { }
+
+// ImportTriples stores all the triples in the store.
+func (db *Store) ImportTriples(triples []rdf.Triple) (err error) {
 	err = db.kv.Update(func(tx *bolt.Tx) error {
-		for _, tr := range g {
+		for _, tr := range triples {
 			// TODO optimize this loop:
 			// * the triples are sorted, we can reuse subject/predicate from previous iteration
 			// * if a subject has more than on value of a predicate, it should batch the bitmap updates.
@@ -271,7 +271,7 @@ func (db *Store) ImportGraph(g rdf.Graph) (err error) {
 // such incidents. It returns the total number of triples imported.
 func (db *Store) Import(r io.Reader, batchSize int, logErr bool) (int, error) {
 	dec := rdf.NewNTDecoder(r)
-	graph := make([]rdf.Triple, 0, batchSize+1)
+	triples := make([]rdf.Triple, 0, batchSize+1)
 	c := 0 // totalt count
 	i := 0 // current batch count
 	for tr, err := dec.Decode(); err != io.EOF; tr, err = dec.Decode() {
@@ -281,20 +281,20 @@ func (db *Store) Import(r io.Reader, batchSize int, logErr bool) (int, error) {
 			}
 			continue
 		}
-		graph = append(graph, tr)
+		triples = append(triples, tr)
 		i++
 		if i == batchSize {
-			err = db.ImportGraph(graph)
+			err = db.ImportTriples(triples)
 			if err != nil {
 				return c, err
 			}
 			c += i
 			i = 0
-			graph = graph[0:0]
+			triples = triples[0:0]
 		}
 	}
-	if len(graph) > 0 {
-		err := db.ImportGraph(graph)
+	if len(triples) > 0 {
+		err := db.ImportTriples(triples)
 		if err != nil {
 			return c, err
 		}
@@ -339,6 +339,7 @@ func (q *Query) CBD(s rdf.IRI, depth int) *Query {
 // Query executes the query against the triple store, returning a graph
 // of the matching triples.
 func (db *Store) Query(q *Query) (g rdf.Graph, err error) {
+	g = rdf.NewGraph()
 	err = db.kv.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(bIdxTerms)
 		bs := bkt.Get(q.subj.Bytes())
@@ -370,7 +371,7 @@ func (db *Store) Query(q *Query) (g rdf.Graph, err error) {
 					if b == nil {
 						panic("term should be there!")
 					}
-					g = append(g, rdf.NewTriple(q.subj, pred.(rdf.IRI), db.decode(b)))
+					g.Add(rdf.NewTriple(q.subj, pred.(rdf.IRI), db.decode(b)))
 				}
 			case 1:
 				break outerSPO
@@ -404,7 +405,7 @@ func (db *Store) Query(q *Query) (g rdf.Graph, err error) {
 						if b == nil {
 							panic("term should be there!")
 						}
-						g = append(g, rdf.NewTriple(subj.(rdf.IRI), db.decode(b).(rdf.IRI), q.subj))
+						g.Add(rdf.NewTriple(subj.(rdf.IRI), db.decode(b).(rdf.IRI), q.subj))
 					}
 				case 1:
 					break outerOSP

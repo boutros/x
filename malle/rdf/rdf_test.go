@@ -164,6 +164,26 @@ func TestGraphEq(t *testing.T) {
 	}
 }
 
+func TestGraphTriples(t *testing.T) {
+	s1 := mustNewIRI("s1")
+	s2 := mustNewIRI("s2")
+	p1 := mustNewIRI("p1")
+	p2 := mustNewIRI("p2")
+	o1 := mustNewLiteral("o1")
+	o2 := mustNewLiteral("o2")
+
+	g := NewGraph().
+		Add(Triple{s1, p1, o1}).
+		Add(Triple{s1, p1, o2}).
+		Add(Triple{s2, p2, o2}).
+		Add(Triple{s2, p2, o2}).
+		Add(Triple{s1, p2, o1})
+
+	if len(g.Triples()) != 4 {
+		t.Errorf("len(Graph{%v}.Triples()) == %d; want 4", len(g.Triples()))
+	}
+}
+
 func TestLoadGraph(t *testing.T) {
 	// TODO repeat a triple, it should not be exist twice
 	input := `<s><p><o>.

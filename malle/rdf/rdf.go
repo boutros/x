@@ -103,7 +103,7 @@ func (i IRI) String() string {
 
 // Value returns the IRI as a string.
 func (i IRI) Value() interface{} {
-	return i
+	return string(i)
 }
 
 // Eq tests if IRI is equal to another Term.
@@ -337,7 +337,7 @@ func eqTerms(a, b Terms) bool {
 	return true
 }
 
-// Terms is a slice of []Term. (Nessecary to make it sortable)
+// Terms is a slice of []Term. (Necessary to make it sortable)
 type Terms []Term
 
 // Len satisfies the Sort interface for Terms.
@@ -357,7 +357,7 @@ func (g Graph) Add(t Triple) Graph {
 			// predicate exists
 			for _, term := range terms {
 				if term.Eq(t.obj) {
-					// triple allready in graph
+					// triple already in graph
 					return g
 				}
 			}
@@ -380,12 +380,32 @@ func (g Graph) Add(t Triple) Graph {
 	return g
 }
 
+// Triples returns all the triples in the graph.
+func (g Graph) Triples() []Triple {
+	trs := make([]Triple, 0, len(g))
+
+	for subj, props := range g {
+		for pred, terms := range props {
+			for _, term := range terms {
+				trs = append(trs, Triple{subj: subj, pred: pred, obj: term})
+			}
+		}
+	}
+
+	return trs
+}
+
+// IsEmpty returns true if the graph is empty, otherwise false.
+func (g Graph) IsEmpty() bool {
+	return g == nil || len(g) == 0
+}
+
 //func (g Graph) Dump(w io.Writer) error {}
 //func (g Graph) String() string {}
 
 // Load reads N-Triples from a stream until EOF and returns the parsed
 // triples as a Graph. Any triples with blank nodes or syntactic errors
-// will be ignored.
+// are ignored.
 func Load(r io.Reader) Graph {
 	d := NewNTDecoder(r)
 	g := NewGraph()

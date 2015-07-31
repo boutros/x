@@ -438,14 +438,13 @@ func TestStats(t *testing.T) {
 
 func TestResourceQuery(t *testing.T) {
 	s := mustNewIRI("s10")
-	g := rdf.Graph{
-		rdf.NewTriple(s, mustNewIRI("p1"), mustNewLiteral("o1")),
-		rdf.NewTriple(s, mustNewIRI("p1"), mustNewLiteral("o2")),
-		rdf.NewTriple(s, mustNewIRI("p2"), mustNewLiteral("o1")),
-		rdf.NewTriple(s, mustNewIRI("p3"), mustNewLiteral("o1")),
-	}
+	g := rdf.NewGraph().
+		Add(rdf.NewTriple(s, mustNewIRI("p1"), mustNewLiteral("o1"))).
+		Add(rdf.NewTriple(s, mustNewIRI("p1"), mustNewLiteral("o2"))).
+		Add(rdf.NewTriple(s, mustNewIRI("p2"), mustNewLiteral("o1"))).
+		Add(rdf.NewTriple(s, mustNewIRI("p3"), mustNewLiteral("o1")))
 
-	err := testDB.ImportGraph(g)
+	err := testDB.ImportTriples(g.Triples())
 	if err != nil {
 		t.Fatalf("Store.ImportGraph(%v) == %v; want no error", g, err)
 	}
