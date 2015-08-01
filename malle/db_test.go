@@ -71,68 +71,6 @@ func TestMain(m *testing.M) {
 	os.Exit(retCode)
 }
 
-func genRandTerm() rdf.Term {
-	i := rnd.Intn(10)
-	if i < 5 {
-		return genRandIRI()
-	}
-	return genRandLiteral()
-}
-
-func genRandLiteral() rdf.Literal {
-	i := rnd.Intn(10)
-	var err error
-	var l rdf.Literal
-	switch {
-	case i < 5:
-		l, err = rdf.NewLiteral(genRandString(2000))
-	// TODO xsd datatypes
-	default:
-		l, err = rdf.NewLangLiteral(genRandString(2000), genRandSCIIString(8))
-	}
-	if err != nil {
-		panic(err)
-	}
-	return l
-}
-
-func genRandIRI() rdf.IRI {
-	hosts := []string{
-		"http://example.org/title/",
-		"http://example.org/person#",
-		"http://ok.com/resource/",
-		"http://xyz.no/data/",
-		"http://db.com/id#",
-		"http://example.com/place/",
-		"http://example.com/animal#",
-	}
-	h := hosts[rnd.Intn(len(hosts))]
-	iri, err := rdf.NewIRI(h + genRandSCIIString(20))
-	if err != nil {
-		panic(err)
-	}
-	return iri
-}
-
-func genRandString(length int) string {
-	l := rnd.Intn(length) + 1
-	r := make([]rune, l)
-	for i := range r {
-		r[i] = rune(rnd.Int31n(2000 + 60))
-	}
-	return string(r)
-}
-
-func genRandSCIIString(length int) string {
-	letters := []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ._")
-	l := rnd.Intn(length) + 1
-	r := make([]rune, l)
-	for i := range r {
-		r[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(r)
-}
-
 func TestEncodeDecode(t *testing.T) {
 	nilDB := Store{}
 	tests := []rdf.Term{
@@ -446,7 +384,7 @@ func TestResourceQuery(t *testing.T) {
 
 	err := testDB.ImportTriples(g.Triples())
 	if err != nil {
-		t.Fatalf("Store.ImportGraph(%v) == %v; want no error", g, err)
+		t.Fatalf("Store.ImportTriples(%v) == %v; want no error", g, err)
 	}
 
 	res, err := testDB.Query(NewQuery().Resource(s))
