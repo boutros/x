@@ -274,7 +274,7 @@ func (t Triple) Object() Term {
 
 // String returns an N-triples serialization of the Triple.
 func (t Triple) String() string {
-	return fmt.Sprintf("%s %s %s .", t.subj.String(), t.pred.String(), t.obj.String())
+	return fmt.Sprintf("%s %s %s .\n", t.subj.String(), t.pred.String(), t.obj.String())
 }
 
 // Eq tests if two triples are equal.
