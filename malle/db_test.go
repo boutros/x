@@ -441,3 +441,43 @@ _:b1 <p_2> <o_1> . # triples with blank node are ignored
 		t.Fatalf("Store.Import(%s) == %d, %v; want 3, <nil>", graph, n, err)
 	}
 }
+
+func TestImportTriples(t *testing.T) {
+	trs := genRandTriples(100)
+	err := testDB.ImportTriples(trs)
+	if err != nil {
+		t.Fatalf("Store.ImportTriples() failed with: %v", err)
+	}
+	for _, tr := range trs {
+		ok, err := testDB.HasTriple(tr)
+		if err != nil {
+			t.Fatalf("Store.HasTriple(%v) => %v, %v; want true, nil", tr, ok, err)
+			continue
+		}
+		if !ok {
+			t.Fatalf("Store.ImportTriples() failed to import: %v", tr)
+		}
+	}
+}
+
+func TestImportGraph(t *testing.T) {
+	trs := genRandTriples(100)
+	g := rdf.NewGraph()
+	for _, tr := range trs {
+		g.Add(tr)
+	}
+	err := testDB.ImportGraph(g)
+	if err != nil {
+		t.Fatalf("Store.ImportGraph() failed with: %v", err)
+	}
+	for _, tr := range trs {
+		ok, err := testDB.HasTriple(tr)
+		if err != nil {
+			t.Fatalf("Store.HasTriple(%v) => %v, %v; want true, nil", tr, ok, err)
+			continue
+		}
+		if !ok {
+			t.Fatalf("Store.ImportGraph() failed to import: %v", tr)
+		}
+	}
+}

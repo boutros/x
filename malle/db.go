@@ -231,7 +231,40 @@ func (db *Store) HasTriple(tr rdf.Triple) (exists bool, err error) {
 	return exists, err
 }
 
-//func (db *Store) ImportGraph(g rdf.Graph) (err error) { }
+// ImportGraph imports the graph into the triple store.
+func (db *Store) ImportGraph(g rdf.Graph) (err error) {
+	err = db.kv.Update(func(tx *bolt.Tx) error {
+		for subj, props := range g {
+
+			sID, err := db.addTerm(tx, subj)
+			if err != nil {
+				return err
+			}
+
+			for pred, terms := range props {
+				pID, err := db.addTerm(tx, pred)
+				if err != nil {
+					return err
+				}
+
+				for _, obj := range terms {
+					// TODO batch bitmap operations for all obj in terms
+					oID, err := db.addTerm(tx, obj)
+					if err != nil {
+						return err
+					}
+
+					err = db.storeTriple(tx, sID, pID, oID)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+		return nil
+	})
+	return err
+}
 
 // ImportTriples stores all the triples in the store.
 func (db *Store) ImportTriples(triples []rdf.Triple) (err error) {
@@ -268,7 +301,8 @@ func (db *Store) ImportTriples(triples []rdf.Triple) (err error) {
 
 // Import imports triples from an N-Triples stream, in batches of given size.
 // It will ignore triples with blank nodes and errors. If the logErr flag is set it will log
-// such incidents. It returns the total number of triples imported.
+// such incidents. It returns the total number of triples imported (regardless if they where in the
+// store before or not)
 func (db *Store) Import(r io.Reader, batchSize int, logErr bool) (int, error) {
 	dec := rdf.NewNTDecoder(r)
 	triples := make([]rdf.Triple, 0, batchSize+1)

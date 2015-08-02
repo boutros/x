@@ -168,3 +168,18 @@ func BenchmarkImport100NTriples(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkImportGraph100(b *testing.B) {
+	trs := genRandTriples(100)
+	g := rdf.NewGraph()
+	for _, tr := range trs {
+		g.Add(tr)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		err := testDB.ImportGraph(g)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
