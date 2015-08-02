@@ -170,6 +170,7 @@ func (l Literal) Lang() string {
 
 // String returns a N-Triples serialization of a Literal.
 func (l Literal) String() string {
+	// TODO escape these 4: \" \n \r \\
 	switch l.datatype {
 	case RDFLangString:
 		return fmt.Sprintf("\"%s\"@%s", l.val, l.lang)

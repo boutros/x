@@ -1,6 +1,7 @@
 package malle
 
 import (
+	"bytes"
 	"math/rand"
 	"testing"
 
@@ -50,6 +51,33 @@ func genRandIRI() rdf.IRI {
 	return iri
 }
 
+func genRandPred() rdf.IRI {
+	preds := []string{
+		"http://www.w3.org/1999/02/22-rdf-syntax-ns#type",
+		"http://purl.org/dc/terms/created",
+		"http://purl.org/dc/terms/modified",
+		"http://www.w3.org/2000/01/rdf-schema#label",
+		"http://www.w3.org/1999/02/22-rdf-syntax-ns#first",
+		"http://www.w3.org/1999/02/22-rdf-syntax-ns#rest",
+		"http://www.w3.org/2004/02/skos/core#prefLabel",
+		"http://dbpedia.org/ontology/literaryGenre",
+		"http://purl.org/dc/terms/contributor",
+		"http://commontag.org/ns#label",
+		"http://commontag.org/ns#tagged",
+		"http://purl.org/ontology/bibo/edition",
+		"http://data.deichman.no/dugnadsbaseID",
+		"http://xmlns.com/foaf/0.1/depiction",
+		"http://data.deichman.no/narLabel",
+		"http://www.w3.org/2002/07/owl#sameAs",
+		"http://purl.org/dc/terms/language",
+		"http://data.deichman.no/bibliofilID",
+		"http://purl.org/dc/terms/format",
+		"http://data.deichman.no/location_signature",
+	}
+	iri := preds[rnd.Intn(len(preds))]
+	return mustNewIRI(iri)
+}
+
 func genRandString(length int) string {
 	l := rnd.Intn(length) + 1
 	r := make([]rune, l)
@@ -70,13 +98,22 @@ func genRandSCIIString(length int) string {
 }
 
 func genRandTriple() rdf.Triple {
-	return rdf.NewTriple(genRandIRI(), genRandIRI(), genRandTerm())
+	return rdf.NewTriple(genRandIRI(), genRandPred(), genRandTerm())
 }
 
 func genRandTriples(n int) []rdf.Triple {
 	trs := make([]rdf.Triple, 0, n)
 	for i := 0; i < n; i++ {
-		trs = append(trs, genRandTriple())
+		tr := genRandTriple()
+		trs = append(trs, tr)
+		if r := rnd.Intn(10); r > 6 {
+			c := rnd.Intn(3 + 1)
+			pred := genRandPred()
+			for j := 0; j < c; j++ {
+				trs = append(trs, rdf.NewTriple(tr.Subject(), pred, genRandTerm()))
+				i++
+			}
+		}
 	}
 	return trs
 }
@@ -111,6 +148,21 @@ func BenchmarkImport100Triples(b *testing.B) {
 func BenchmarkImport1000Triples(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		err := testDB.ImportTriples(genRandTriples(1000))
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkImport100NTriples(b *testing.B) {
+	trs := genRandTriples(100)
+	var bf bytes.Buffer
+	for _, tr := range trs {
+		bf.WriteString(tr.String())
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, err := testDB.Import(bytes.NewReader(bf.Bytes()), 100, false)
 		if err != nil {
 			b.Fatal(err)
 		}

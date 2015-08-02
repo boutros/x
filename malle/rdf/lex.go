@@ -224,11 +224,12 @@ func (l *lexer) unescape(typ tokenType, val string) token {
 	l.escaped = false
 	switch typ {
 	case tokenIRI:
-		panic("TODO")
+		fmt.Printf(">>>>>>>\n%s", val)
+		panic("TODO unescape IRI")
 	case tokenLiteral:
 		return l.unescapeLiteral(typ, val)
 	default:
-		return token{Typ: typ, value: val}
+		panic("unescape only Literal/IRI")
 	}
 }
 
