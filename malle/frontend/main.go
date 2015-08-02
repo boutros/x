@@ -45,7 +45,7 @@ const htmlResource = `<!DOCTYPE html>
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>{{. | chooseTitle}}</title>
+	<title>{{.Props | chooseTitle}}</title>
 	<style type="text/css">
 		body { font-family: sans serif; margin: 40px auto; max-width: 1140px; line-height: 1.6; font-size: 18px; color: #222; padding: 0 10px }
 		h1, h2, h3 { line-height: 1.2;}
@@ -55,13 +55,15 @@ const htmlResource = `<!DOCTYPE html>
 </head>
 <body>
 	<div>
-		<h3>{{with index .  0}}{{.Subject | html}}{{end}}</h3>
+		<h3>{{.Subj | html}}</h3>
 		<table>
-			{{range .}}
-			<tr>
-				<td title="{{.Predicate | html}}">{{.Predicate | shortPred}}</td>
-				<td>{{.Object | linkify}}</td>
-			</tr>
+			{{range $pred, $terms := .Props}}
+				{{ range $obj := $terms}}
+					<tr>
+						<td title="{{$pred | html}}">{{$pred | shortPred}}</td>
+						<td>{{$obj | linkify}}</td>
+					</tr>
+				{{end}}
 			{{end}}
 		</table>
 	</div>
@@ -108,7 +110,7 @@ func main() {
 			}
 			panic("unreachable")
 		},
-		"chooseTitle": func(triples []rdf.Triple) string {
+		"chooseTitle": func(triples map[rdf.IRI]rdf.Terms) string {
 			return "TODO choose title from triples"
 		},
 	}
@@ -182,7 +184,10 @@ func main() {
 			http.Error(w, "No triples found", http.StatusNotFound)
 			return
 		}
-		tplResource.Execute(w, graph.Triples())
+		tplResource.Execute(w, struct {
+			Subj  rdf.IRI
+			Props map[rdf.IRI]rdf.Terms
+		}{iri, graph[iri]})
 	})
 	err = http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 	if err != nil {
