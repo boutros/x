@@ -266,46 +266,13 @@ func (db *Store) ImportGraph(g rdf.Graph) (err error) {
 	return err
 }
 
-// ImportTriples stores all the triples in the store.
-func (db *Store) ImportTriples(triples []rdf.Triple) (err error) {
-	err = db.kv.Update(func(tx *bolt.Tx) error {
-		for _, tr := range triples {
-			// TODO optimize this loop:
-			// * the triples are sorted, we can reuse subject/predicate from previous iteration
-			// * if a subject has more than on value of a predicate, it should batch the bitmap updates.
-
-			sID, err := db.addTerm(tx, tr.Subject())
-			if err != nil {
-				return err
-			}
-
-			pID, err := db.addTerm(tx, tr.Predicate())
-			if err != nil {
-				return err
-			}
-
-			oID, err := db.addTerm(tx, tr.Object())
-			if err != nil {
-				return err
-			}
-
-			err = db.storeTriple(tx, sID, pID, oID)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	return err
-}
-
 // Import imports triples from an N-Triples stream, in batches of given size.
 // It will ignore triples with blank nodes and errors. If the logErr flag is set it will log
 // such incidents. It returns the total number of triples imported (regardless if they where in the
 // store before or not)
 func (db *Store) Import(r io.Reader, batchSize int, logErr bool) (int, error) {
 	dec := rdf.NewNTDecoder(r)
-	triples := make([]rdf.Triple, 0, batchSize+1)
+	g := rdf.NewGraph()
 	c := 0 // totalt count
 	i := 0 // current batch count
 	for tr, err := dec.Decode(); err != io.EOF; tr, err = dec.Decode() {
@@ -315,20 +282,20 @@ func (db *Store) Import(r io.Reader, batchSize int, logErr bool) (int, error) {
 			}
 			continue
 		}
-		triples = append(triples, tr)
+		g.Add(tr)
 		i++
 		if i == batchSize {
-			err = db.ImportTriples(triples)
+			err = db.ImportGraph(g)
 			if err != nil {
 				return c, err
 			}
 			c += i
 			i = 0
-			triples = triples[0:0]
+			g = rdf.NewGraph()
 		}
 	}
-	if len(triples) > 0 {
-		err := db.ImportTriples(triples)
+	if len(g) > 0 {
+		err := db.ImportGraph(g)
 		if err != nil {
 			return c, err
 		}

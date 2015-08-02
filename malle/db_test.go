@@ -382,9 +382,9 @@ func TestResourceQuery(t *testing.T) {
 		Add(rdf.NewTriple(s, mustNewIRI("p2"), mustNewLiteral("o1"))).
 		Add(rdf.NewTriple(s, mustNewIRI("p3"), mustNewLiteral("o1")))
 
-	err := testDB.ImportTriples(g.Triples())
+	err := testDB.ImportGraph(g)
 	if err != nil {
-		t.Fatalf("Store.ImportTriples(%v) == %v; want no error", g, err)
+		t.Fatalf("Store.ImportGraph(%v) == %v; want no error", g, err)
 	}
 
 	res, err := testDB.Query(NewQuery().Resource(s))
@@ -442,35 +442,13 @@ _:b1 <p_2> <o_1> . # triples with blank node are ignored
 	}
 }
 
-func TestImportTriples(t *testing.T) {
-	trs := genRandTriples(100)
-	err := testDB.ImportTriples(trs)
-	if err != nil {
-		t.Fatalf("Store.ImportTriples() failed with: %v", err)
-	}
-	for _, tr := range trs {
-		ok, err := testDB.HasTriple(tr)
-		if err != nil {
-			t.Fatalf("Store.HasTriple(%v) => %v, %v; want true, nil", tr, ok, err)
-			continue
-		}
-		if !ok {
-			t.Fatalf("Store.ImportTriples() failed to import: %v", tr)
-		}
-	}
-}
-
 func TestImportGraph(t *testing.T) {
-	trs := genRandTriples(100)
-	g := rdf.NewGraph()
-	for _, tr := range trs {
-		g.Add(tr)
-	}
+	g := genRandGraph(100)
 	err := testDB.ImportGraph(g)
 	if err != nil {
 		t.Fatalf("Store.ImportGraph() failed with: %v", err)
 	}
-	for _, tr := range trs {
+	for _, tr := range g.Triples() {
 		ok, err := testDB.HasTriple(tr)
 		if err != nil {
 			t.Fatalf("Store.HasTriple(%v) => %v, %v; want true, nil", tr, ok, err)

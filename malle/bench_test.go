@@ -1,7 +1,6 @@
 package malle
 
 import (
-	"bytes"
 	"math/rand"
 	"testing"
 
@@ -101,21 +100,21 @@ func genRandTriple() rdf.Triple {
 	return rdf.NewTriple(genRandIRI(), genRandPred(), genRandTerm())
 }
 
-func genRandTriples(n int) []rdf.Triple {
-	trs := make([]rdf.Triple, 0, n)
+func genRandGraph(n int) rdf.Graph {
+	g := rdf.NewGraph()
 	for i := 0; i < n; i++ {
 		tr := genRandTriple()
-		trs = append(trs, tr)
+		g.Add(tr)
 		if r := rnd.Intn(10); r > 6 {
 			c := rnd.Intn(3 + 1)
 			pred := genRandPred()
 			for j := 0; j < c; j++ {
-				trs = append(trs, rdf.NewTriple(tr.Subject(), pred, genRandTerm()))
+				g.Add(rdf.NewTriple(tr.Subject(), pred, genRandTerm()))
 				i++
 			}
 		}
 	}
-	return trs
+	return g
 }
 
 func BenchmarkAddTriple(b *testing.B) {
@@ -127,57 +126,27 @@ func BenchmarkAddTriple(b *testing.B) {
 	}
 }
 
-func BenchmarkImport10Triples(b *testing.B) {
+func BenchmarkImportGraphOf10(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		err := testDB.ImportTriples(genRandTriples(10))
+		err := testDB.ImportGraph(genRandGraph(10))
 		if err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
-func BenchmarkImport100Triples(b *testing.B) {
+func BenchmarkImportGraphOf100(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		err := testDB.ImportTriples(genRandTriples(100))
+		err := testDB.ImportGraph(genRandGraph(100))
 		if err != nil {
 			b.Fatal(err)
 		}
 	}
 }
 
-func BenchmarkImport1000Triples(b *testing.B) {
+func BenchmarkImportGraphOf1000(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		err := testDB.ImportTriples(genRandTriples(1000))
-		if err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func BenchmarkImport100NTriples(b *testing.B) {
-	trs := genRandTriples(100)
-	var bf bytes.Buffer
-	for _, tr := range trs {
-		bf.WriteString(tr.String())
-	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		_, err := testDB.Import(bytes.NewReader(bf.Bytes()), 100, false)
-		if err != nil {
-			b.Fatal(err)
-		}
-	}
-}
-
-func BenchmarkImportGraph100(b *testing.B) {
-	trs := genRandTriples(100)
-	g := rdf.NewGraph()
-	for _, tr := range trs {
-		g.Add(tr)
-	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		err := testDB.ImportGraph(g)
+		err := testDB.ImportGraph(genRandGraph(1000))
 		if err != nil {
 			b.Fatal(err)
 		}
