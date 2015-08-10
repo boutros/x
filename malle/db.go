@@ -528,6 +528,7 @@ func (db *Store) addTerm(tx *bolt.Tx, term rdf.Term) (id uint32, err error) {
 		return id, nil
 	} else if err != ErrNotFound {
 		// Some other IO error occured
+		log.Println(err)
 		return uint32(0), err
 	}
 	bkt := tx.Bucket(bTerms)
@@ -542,6 +543,7 @@ func (db *Store) addTerm(tx *bolt.Tx, term rdf.Term) (id uint32, err error) {
 	bt := db.encode(term)
 	err = bkt.Put(idb, bt)
 	if err != nil {
+		log.Println(err)
 		return uint32(0), err
 	}
 	bkt = tx.Bucket(bIdxTerms)
@@ -661,48 +663,34 @@ func (db *Store) removeTriple(tx *bolt.Tx, s, p, o uint32) error {
 // removeOrphanedTerms removes any of the given Terms if they are no longer
 // part of any triple.
 func (db *Store) removeOrphanedTerms(tx *bolt.Tx, s, p, o uint32) error {
-	var err error
-	cur := tx.Bucket(bSPO).Cursor()
-	for k, _ := cur.Seek(u32tob(s - 1)); k != nil; k, _ = cur.Next() {
-		switch bytes.Compare(u32tob(s), k[:4]) {
-		case 0:
-			goto checkP
-		case -1:
-			goto removeS
+	// TODO by now we don't know whether object is a Literal or and IRI.
+	// If we knew it to be a Literal, checking the OSP index would suffice.
+	for _, id := range []uint32{s, p, o} {
+		if db.notInIndex(tx, id, bSPO) && db.notInIndex(tx, id, bOSP) && db.notInIndex(tx, id, bPOS) {
+			err := db.removeTerm(tx, id)
+			if err != nil {
+				if err == ErrNotFound {
+					panic("tried to remove Term allready gone")
+				} else {
+					return err
+				}
+			}
 		}
 	}
-removeS:
-	err = db.removeTerm(tx, s)
-	if err != nil {
-		return err
-	}
-checkP:
-	cur = tx.Bucket(bPOS).Cursor()
-	for k, _ := cur.Seek(u32tob(p - 1)); k != nil; k, _ = cur.Seek(u32tob(p - 1)) {
-		switch bytes.Compare(u32tob(p), k[:4]) {
+	return nil
+}
+
+func (db *Store) notInIndex(tx *bolt.Tx, id uint32, idx []byte) bool {
+	cur := tx.Bucket(idx).Cursor()
+	for k, _ := cur.Seek(u32tob(id - 1)); k != nil; k, _ = cur.Next() {
+		switch bytes.Compare(k[:4], u32tob(id)) {
 		case 0:
-			goto checkO
-		case -1:
-			goto removeP
+			return false
+		case 1:
+			return true
 		}
 	}
-removeP:
-	err = db.removeTerm(tx, p)
-	if err != nil {
-		return err
-	}
-checkO:
-	cur = tx.Bucket(bOSP).Cursor()
-	for k, _ := cur.Seek(u32tob(o - 1)); k != nil; k, _ = cur.Seek(u32tob(o - 1)) {
-		switch bytes.Compare(u32tob(o), k[:4]) {
-		case 0:
-			return nil
-		case -1:
-			goto removeO
-		}
-	}
-removeO:
-	return db.removeTerm(tx, o)
+	return true
 }
 
 // removeTerm removes a Term using the given transaction.
@@ -710,7 +698,7 @@ func (db *Store) removeTerm(tx *bolt.Tx, termID uint32) error {
 	bkt := tx.Bucket(bTerms)
 	term := bkt.Get(u32tob(termID))
 	if term == nil {
-		// TODO log or panic
+		log.Println("BUG: store.removeTerm: Term does not exist")
 		return ErrNotFound
 	}
 	err := bkt.Delete(u32tob(termID))
