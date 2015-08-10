@@ -45,7 +45,7 @@ const htmlResource = `<!DOCTYPE html>
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>{{or (.Props | chooseTitle) (.Subj | html)}}</title>
+	<title>{{or (.Props | chooseTitle) .Subj}}</title>
 	<style type="text/css">
 		body { font-family: sans serif; margin: 40px auto; max-width: 1140px; line-height: 1.6; font-size: 18px; color: #222; padding: 0 10px }
 		h1, h2, h3 { line-height: 1.2;}
@@ -55,7 +55,7 @@ const htmlResource = `<!DOCTYPE html>
 </head>
 <body>
 	<div>
-		<h2>{{or (.Props | chooseTitle) (.Subj | html)}}</h2>
+		<h2>{{.Props | chooseTitle}}</h2>
 		<h3>{{.Subj | html}}</h3>
 		<table>
 			{{range $pred, $terms := .Props}}
