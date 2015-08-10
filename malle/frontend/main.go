@@ -45,7 +45,7 @@ const htmlResource = `<!DOCTYPE html>
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>{{.Props | chooseTitle}}</title>
+	<title>{{or (.Props | chooseTitle) (.Subj | html)}}</title>
 	<style type="text/css">
 		body { font-family: sans serif; margin: 40px auto; max-width: 1140px; line-height: 1.6; font-size: 18px; color: #222; padding: 0 10px }
 		h1, h2, h3 { line-height: 1.2;}
@@ -55,6 +55,7 @@ const htmlResource = `<!DOCTYPE html>
 </head>
 <body>
 	<div>
+		<h2>{{or (.Props | chooseTitle) (.Subj | html)}}</h2>
 		<h3>{{.Subj | html}}</h3>
 		<table>
 			{{range $pred, $terms := .Props}}
@@ -65,10 +66,26 @@ const htmlResource = `<!DOCTYPE html>
 					</tr>
 				{{end}}
 			{{end}}
+
 		</table>
 	</div>
 </body>
 </html>`
+
+var titlePredicates = []rdf.IRI{
+	mustNewIRI("http://www.w3.org/2004/02/skos/core#prefLabel"),
+	mustNewIRI("http://purl.org/dc/terms/title"),
+	mustNewIRI("http://www.w3.org/2000/01/rdf-schema#label"),
+	mustNewIRI("http://xmlns.com/foaf/0.1/name"),
+}
+
+func mustNewIRI(iri string) rdf.IRI {
+	i, err := rdf.NewIRI(iri)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
 
 func shorten(s string) string {
 	i := len(s)
@@ -111,7 +128,16 @@ func main() {
 			panic("unreachable")
 		},
 		"chooseTitle": func(triples map[rdf.IRI]rdf.Terms) string {
-			return "TODO choose title from triples"
+			// TODO could chose based on rdf:type:
+			// scos:Concept => skos:prefLabel
+			// foaf:Person => foaf:name
+			// etc..
+			for _, p := range titlePredicates {
+				if terms, ok := triples[p]; ok {
+					return terms[0].Value().(string) // randomize index for len(terms)?
+				}
+			}
+			return ""
 		},
 	}
 	var (
