@@ -266,6 +266,52 @@ func (db *Store) ImportGraph(g rdf.Graph) (err error) {
 	return err
 }
 
+// DeleteGraph deletes all the given graph's triples from the store.
+func (db *Store) DeleteGraph(g rdf.Graph) (err error) {
+	// TODO removeOrpanedTerm after each iteration of subj, pred & obj
+	err = db.kv.Update(func(tx *bolt.Tx) error {
+		for subj, props := range g {
+			sID, err := db.getID(tx, subj)
+			if err != nil {
+				if err == ErrNotFound {
+					continue
+				}
+				return err
+			}
+
+			for pred, terms := range props {
+				pID, err := db.getID(tx, pred)
+				if err != nil {
+					if err == ErrNotFound {
+						continue
+					}
+					return err
+				}
+
+				for _, obj := range terms {
+					// TODO batch bitmap operations for all obj in terms
+					oID, err := db.getID(tx, obj)
+					if err != nil {
+						if err == ErrNotFound {
+							continue
+						}
+						return err
+					}
+
+					// TODO inline removeTriple
+					// + removeOrphanedTerms should be batched
+					err = db.removeTriple(tx, sID, pID, oID)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+		return nil
+	})
+	return err
+}
+
 // Import imports triples from an N-Triples stream, in batches of given size.
 // It will ignore triples with blank nodes and errors. If the logErr flag is set it will log
 // such incidents. It returns the total number of triples imported (regardless if they where in the

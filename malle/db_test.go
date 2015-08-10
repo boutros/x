@@ -13,7 +13,7 @@ import (
 	"github.com/tgruben/roaring"
 )
 
-const seed = 0x123
+const seed = 0x1
 
 var (
 	testDB *Store
@@ -456,6 +456,29 @@ func TestImportGraph(t *testing.T) {
 		}
 		if !ok {
 			t.Fatalf("Store.ImportGraph() failed to import: %v", tr)
+		}
+	}
+}
+
+func TestDeleteGraph(t *testing.T) {
+	g := genRandGraph(100)
+	err := testDB.ImportGraph(g)
+	if err != nil {
+		t.Fatalf("Store.ImportGraph() failed with: %v", err)
+	}
+	err = testDB.DeleteGraph(g)
+	if err != nil {
+		t.Fatalf("Store.DeleteGraph() failed with: %v", err)
+	}
+
+	for _, tr := range g.Triples() {
+		ok, err := testDB.HasTriple(tr)
+		if err != nil {
+			t.Fatalf("Store.HasTriple(%v) => %v, %v; want false, nil", tr, ok, err)
+			continue
+		}
+		if ok {
+			t.Fatalf("Store.DeleteGraph() failed to delete: %v", tr)
 		}
 	}
 }
