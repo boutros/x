@@ -17,6 +17,8 @@ import (
 const (
 	// MaxTerms is the maximum number of RDF terms that can be stored.
 	MaxTerms = 4294967295
+	// MaxResults is the maximum number of triples to return from a query. TODO make use of!
+	MaxResults = 1000
 )
 
 // buckets in the key-value store
