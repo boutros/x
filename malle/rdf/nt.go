@@ -13,9 +13,11 @@ import (
 // * Literal that have any of the XSD datatypes are not validated against their datatype;
 //   ex this will not fail: "abc"^^<http://www.w3.org/2001/XMLSchema#int>
 // * Any tokens after triple termination (.) until end of line are ignored.
-// * Triples with blank nodes are ignored.
+// * Triples with blank nodes are ignored by default, but can be converted to IRIs.
 type NTDecoder struct {
-	lex *lexer
+	lex        *lexer
+	BNodeAsIRI bool   // If true, convert blank nodes to IRIs
+	BNodeNS    string // Namespace for converted blank nodes
 }
 
 // NewNTDecoder returns a new NTDecoder on the given stream.
@@ -112,11 +114,14 @@ newLine:
 		return Triple{}, err
 	}
 	if tok.Typ == tokenBNode {
-		d.ignoreLine()
-		goto newLine
+		if !d.BNodeAsIRI {
+			d.ignoreLine()
+			goto newLine
+		}
+		tr.subj = IRI(d.BNodeNS + tok.value)
+	} else {
+		tr.subj = IRI(tok.value)
 	}
-
-	tr.subj = IRI(tok.value)
 
 	// predicate
 	tok, err = d.parsePredicate()
@@ -138,8 +143,12 @@ newLine:
 		return Triple{}, err
 	}
 	if tok.Typ == tokenBNode {
-		d.ignoreLine()
-		goto newLine
+		if !d.BNodeAsIRI {
+			d.ignoreLine()
+			goto newLine
+		}
+		tr.obj = IRI(d.BNodeNS + tok.value)
+		goto dot
 	}
 	if tok.Typ == tokenIRI {
 		tr.obj = IRI(tok.value)
@@ -180,6 +189,7 @@ newLine:
 		}
 	}
 
+dot:
 	// dot+newline/eof
 	err = d.parseEnd()
 	if err != nil {
@@ -190,7 +200,13 @@ newLine:
 	return tr, nil
 }
 
-// DecodeAll TODO
-func (d *NTDecoder) DecodeAll() []Triple {
-	return nil
+// DecodeAll consumes stream until the end and decodes all triples into a Graph.
+func (d *NTDecoder) DecodeAll() Graph {
+	g := NewGraph()
+	for tr, err := d.Decode(); err != io.EOF; tr, err = d.Decode() {
+		if err == nil {
+			g.Add(tr)
+		}
+	}
+	return g
 }

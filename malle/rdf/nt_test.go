@@ -154,3 +154,19 @@ func TestDecodeNT(t *testing.T) {
 		}
 	}
 }
+
+func TestDecodeBlankNodes(t *testing.T) {
+	input := `_:4231 <p> "a".
+<s> <p> _:4231.`
+	want := Load(bytes.NewBufferString(`<http://my.domain/resource/4231> <p> "a" .
+<s> <p> <http://my.domain/resource/4231> .`))
+
+	dec := NewNTDecoder(bytes.NewBufferString(input))
+	dec.BNodeAsIRI = true
+	dec.BNodeNS = "http://my.domain/resource/"
+
+	graph := dec.DecodeAll()
+	if !graph.Eq(want) {
+		t.Errorf("Decode(%v) = \n\t%v\nwant:\n\t%v", input, graph, want)
+	}
+}
