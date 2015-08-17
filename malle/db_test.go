@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/boltdb/bolt"
+	"github.com/boutros/x/malle/bimap"
 	"github.com/boutros/x/malle/rdf"
 	"github.com/tgruben/roaring"
 )
@@ -59,6 +60,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
+	testDB.ns = bimap.New(1000)
 
 	retCode := m.Run()
 
@@ -69,21 +71,6 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	os.Exit(retCode)
-}
-
-func TestEncodeDecode(t *testing.T) {
-	nilDB := Store{}
-	tests := []rdf.Term{
-		mustNewIRI("a"),
-		mustNewIRI("http://example.org/1/xyz.æøå"),
-		mustNewLangLiteral("a", "en"),
-		mustNewLangLiteral("æøå", "nb-no"),
-	}
-	for _, term := range tests {
-		if !nilDB.decode(nilDB.encode(term)).Eq(term) {
-			t.Errorf("Store.encode/decode roundtrip failed for %+v", term)
-		}
-	}
 }
 
 func TestAddTerm(t *testing.T) {

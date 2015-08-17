@@ -32,6 +32,7 @@ const htmlIndex = `<!DOCTYPE html>
 		<tr><td><b>Database file size</b></td><td>{{.SizeInBytes}}</td></tr>
 		<tr><td><b>Number of unique terms</b></td><td>{{.NumTerms}}</td></tr>
 		<tr><td><b>Number of triples</b></td><td>{{.NumTriples}}</td></tr>
+		<tr><td><b>Number of different IRI namespaces</b></td><td>{{.NumNamespaces}}</td></tr>
 	</table>
 	<form action="/describe">
 		<p>Enter the IRI of a RDF resource to start browsing:</p>

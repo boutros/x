@@ -4,12 +4,16 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"os"
+	"sync"
 	"sync/atomic"
+	"unicode/utf8"
 
 	"github.com/boltdb/bolt"
+	"github.com/boutros/x/malle/bimap"
 	"github.com/boutros/x/malle/rdf"
 	"github.com/tgruben/roaring"
 )
@@ -28,11 +32,13 @@ var (
 	bIdxTerms = []byte("iterms") // term -> uint32
 	bDT       = []byte("dt")     // uint32 -> iri
 	bIdxDT    = []byte("idt")    // iri -> uint32
+	bNS       = []byte("ns")     // uint16 -> iri namespace
+	bIdxNS    = []byte("ins")    // iri namespace -> uint16
 
-	// Triple indices:
-	bSPO = []byte("spo") // Subect + Predicate -> bitmap of Object
-	bOSP = []byte("osp") // Object + Subject   -> bitmap of Predicate
-	bPOS = []byte("pos") // Predicate + Object -> bitmap of Subject
+	// Triple indices       composite key         bitmap
+	bSPO = []byte("spo") // Subect + Predicate -> Object
+	bOSP = []byte("osp") // Object + Subject   -> Predicate
+	bPOS = []byte("pos") // Predicate + Object -> Subject
 )
 
 // datatypes are the built in datatypes (IDs 0 through 41).
@@ -94,14 +100,18 @@ type Store struct {
 	kv *bolt.DB
 
 	numTr int64 // number of triples stored
+
+	mu sync.RWMutex // protects ns
+	ns *bimap.Map
 }
 
 // Stats holds some statistics of the triple store.
 type Stats struct {
-	NumTerms    int
-	NumTriples  int
-	File        string
-	SizeInBytes int
+	NumTerms      int
+	NumTriples    int
+	NumNamespaces int
+	File          string
+	SizeInBytes   int
 }
 
 // Public API -----------------------------------------------------------------
@@ -130,6 +140,8 @@ func (db *Store) Stats() Stats {
 		st.NumTerms = bkt.Stats().KeyN
 		bkt = tx.Bucket(bSPO)
 		st.NumTriples = int(atomic.LoadInt64(&db.numTr))
+		bkt = tx.Bucket(bNS)
+		st.NumNamespaces = bkt.Stats().KeyN
 		st.File = db.kv.Path()
 		s, err := os.Stat(st.File)
 		if err == nil {
@@ -391,7 +403,11 @@ func (db *Store) Query(q *Query) (g rdf.Graph, err error) {
 	g = rdf.NewGraph()
 	err = db.kv.View(func(tx *bolt.Tx) error {
 		bkt := tx.Bucket(bIdxTerms)
-		bs := bkt.Get(q.subj.Bytes())
+		bt, err := db.encode(tx, q.subj)
+		if err != nil {
+			return ErrNotFound
+		}
+		bs := bkt.Get(bt)
 		if bs == nil {
 			return ErrNotFound
 		}
@@ -480,12 +496,13 @@ func (db *Store) Query(q *Query) (g rdf.Graph, err error) {
 func (db *Store) setup() (*Store, error) {
 	err := db.kv.Update(func(tx *bolt.Tx) error {
 		// Make sure all the required buckets are created
-		for _, b := range [][]byte{bTerms, bIdxTerms, bDT, bIdxDT, bSPO, bOSP, bPOS} {
+		for _, b := range [][]byte{bTerms, bIdxTerms, bDT, bIdxDT, bSPO, bOSP, bPOS, bNS, bIdxNS} {
 			_, err := tx.CreateBucketIfNotExists(b)
 			if err != nil {
 				return err
 			}
 		}
+
 		// Make sure the predefined datatypes are stored
 		bkt := tx.Bucket(bDT)
 		cur := bkt.Cursor()
@@ -497,6 +514,17 @@ func (db *Store) setup() (*Store, error) {
 				// TODO!
 			}
 			i++
+		}
+
+		// Read namepsace dictionary into a Bimap
+		bkt = tx.Bucket(bNS)
+		cur = bkt.Cursor()
+		stats := bkt.Stats()
+		db.ns = bimap.New(max(stats.KeyN, 1))
+
+		for k, v := cur.First(); k != nil; k, v = cur.Next() {
+			fmt.Printf("%v => %v\n", btou16(k), string(v))
+			db.ns.Add(string(v), btou16(k))
 		}
 
 		// Count number of triples
@@ -521,24 +549,116 @@ func (db *Store) setup() (*Store, error) {
 	return db, err
 }
 
-func (db *Store) encode(term rdf.Term) []byte {
-	return term.Bytes()
+func (db *Store) getOrSetNS(tx *bolt.Tx, ns string) (uint16, error) {
+	db.mu.RLock()
+	nsID, ok := db.ns.FindByStr(ns)
+	if ok {
+		db.mu.RUnlock()
+		return nsID, nil
+	}
+	db.mu.RUnlock()
+
+	if !tx.Writable() {
+		// We are in a read transaction, so creating a new ns entry doesn't make sense
+		// TODO split encode into two functions: on with and without side-effects
+		return 0, ErrNotFound
+	}
+
+	// new ns, write to store and bimap
+	bkt := tx.Bucket(bNS)
+	n, err := bkt.NextSequence()
+	if err != nil {
+		log.Println(err)
+		return 0, ErrDBFailure
+	}
+	nb := u16tob(uint16(n))
+	sb := []byte(ns)
+	err = bkt.Put(nb, sb)
+	bkt = tx.Bucket(bIdxNS)
+	err = bkt.Put(sb, nb)
+
+	db.mu.Lock()
+	db.ns.Add(ns, uint16(n))
+	db.mu.Unlock()
+	return uint16(n), nil
+}
+
+func (db *Store) encode(tx *bolt.Tx, term rdf.Term) ([]byte, error) {
+	switch t := term.(type) {
+	case rdf.IRI:
+		prefix, suffix := splitIRI(t.Value().(string))
+		if prefix == suffix {
+			b := t.Bytes()
+			bn := make([]byte, len(b)+2)
+			// bn[0] = 0x00 IRI marker
+			// bn[1] = 0x00 ns (uint16 byte 1)
+			// bn[2] = 0x00 ns (uint16 byte 2)
+			copy(bn[3:], b[1:])
+			return bn, nil
+		}
+		nsID, err := db.getOrSetNS(tx, prefix)
+		if err != nil {
+			return nil, err
+		}
+
+		b := make([]byte, len(suffix)+3)
+		binary.BigEndian.PutUint16(b[1:], nsID)
+		copy(b[3:], []byte(suffix))
+		return b, nil
+	case rdf.Literal:
+		return term.Bytes(), nil
+	}
+	panic("db.encode: unreachable")
 }
 
 func (db *Store) decode(b []byte) rdf.Term {
-	t, err := rdf.DecodeTerm(b)
-	if err != nil {
-		// We control the encoding, so it shouldn't be possible to store
-		// an undecodable term. TODO remove this when confident.
-		panic(err)
+	switch b[0] {
+	case 0x00: // IRI
+		ns := binary.BigEndian.Uint16(b[1:])
+		if ns == 0 {
+			t, err := rdf.DecodeTerm(b[2:])
+			if err != nil {
+				// We control the encoding, so it shouldn't be possible to store
+				// an undecodable term. TODO remove this when confident.
+				panic(err)
+			}
+			return t
+		}
+		db.mu.RLock()
+		prefix, ok := db.ns.FindByInt(ns)
+		db.mu.RUnlock()
+		if !ok {
+			panic("db.decode: bug: encoding didn't store ns in bimap")
+		}
+		bn := make([]byte, len(prefix)+len(b)-2)
+		copy(bn[1:], []byte(prefix))
+		copy(bn[len(prefix)+1:], b[3:])
+		t, err := rdf.DecodeTerm(bn)
+		if err != nil {
+			// We control the encoding, so it shouldn't be possible to store
+			// an undecodable term. TODO remove this when confident.
+			panic(err)
+		}
+		return t
+	default:
+		t, err := rdf.DecodeTerm(b)
+		if err != nil {
+			// We control the encoding, so it shouldn't be possible to store
+			// an undecodable term. TODO remove this when confident.
+			panic(err)
+		}
+		return t
 	}
-	return t
 }
 
 // getID works like the exported GetID, but using the given transaction.
 func (db *Store) getID(tx *bolt.Tx, term rdf.Term) (id uint32, err error) {
 	bkt := tx.Bucket(bIdxTerms)
-	b := bkt.Get(db.encode(term))
+	bt, err := db.encode(tx, term)
+	if err != nil {
+		return 0, err
+	}
+	b := bkt.Get(bt)
 	if b == nil {
 		err = ErrNotFound
 	} else {
@@ -562,7 +682,15 @@ func (db *Store) getTerm(tx *bolt.Tx, id uint32) (rdf.Term, error) {
 // hasTerm returns trie if the term exists.
 func (db *Store) hasTerm(tx *bolt.Tx, term rdf.Term) bool {
 	bkt := tx.Bucket(bIdxTerms)
-	id := bkt.Get(db.encode(term))
+	bt, err := db.encode(tx, term)
+	if err != nil {
+		return false
+	}
+	id := bkt.Get(bt)
+	if err != nil {
+		log.Println(err)
+		return false
+	}
 	if id != nil {
 		return true
 	}
@@ -588,7 +716,10 @@ func (db *Store) addTerm(tx *bolt.Tx, term rdf.Term) (id uint32, err error) {
 	// TODO err if id > max uint32 = 4294967295
 	id = uint32(n)
 	idb := u32tob(uint32(n))
-	bt := db.encode(term)
+	bt, err := db.encode(tx, term)
+	if err != nil {
+		return uint32(0), err
+	}
 	err = bkt.Put(idb, bt)
 	if err != nil {
 		log.Println(err)
@@ -763,14 +894,46 @@ func (db *Store) removeTerm(tx *bolt.Tx, termID uint32) error {
 
 // Helper functions -----------------------------------------------------------
 
-// u32tob converts a uint32 into an 4-byte slice.
+// u32tob converts a uint32 into a 4-byte slice.
 func u32tob(v uint32) []byte {
 	b := make([]byte, 4)
 	binary.BigEndian.PutUint32(b, v)
 	return b
 }
 
-// btou32 converts an 4-byte slice into an uint32.
+// btou32 converts a 4-byte slice into an uint32.
 func btou32(b []byte) uint32 {
 	return binary.BigEndian.Uint32(b)
+}
+
+// u16tob converts a uint16 into a 2-byte slice.
+func u16tob(v uint16) []byte {
+	b := make([]byte, 2)
+	binary.BigEndian.PutUint16(b, v)
+	return b
+}
+
+// btou16 converts a 2-byte slice into an uint16.
+func btou16(b []byte) uint16 {
+	return binary.BigEndian.Uint16(b)
+}
+
+// splitIRI splits an IRI into the prefix ("namespace") and suffix.
+func splitIRI(iri string) (string, string) {
+	i := len(iri)
+	for i > 0 {
+		r, w := utf8.DecodeLastRuneInString(iri[:i])
+		if r == '/' || r == '#' {
+			return iri[:i], iri[i:]
+		}
+		i -= w
+	}
+	return iri, iri
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }

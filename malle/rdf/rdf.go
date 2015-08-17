@@ -73,7 +73,7 @@ func DecodeTerm(b []byte) (Term, error) {
 		ll := int(b[1])
 		return Literal{val: string(b[2+ll:]), datatype: IRI(string(b[2 : 2+ll]))}, nil
 	default:
-		panic("TODO DecodeTerm")
+		panic(fmt.Sprintf("TODO DecodeTerm: %v", string(b)))
 	}
 }
 
