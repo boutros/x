@@ -1,4 +1,4 @@
-// Package bimap implements a bi-directional mapping between strings and uint32.
+// Package bimap implements a bi-directional mapping between strings and uint16.
 package bimap
 
 import "errors"
@@ -12,27 +12,27 @@ var (
 	ErrToLarge     = errors.New("exceeded bimap max size (4294967295)")
 )
 
-// Map is a bi-directional mapping between strings and uint32.
+// Map is a bi-directional mapping between strings and uint16.
 type Map struct {
-	strToInt map[string]uint32
+	strToInt map[string]uint16
 	intToStr []string
 }
 
 // New creates a new, empty Map with an initial capacity. It will grow
-// if needed (up too max uint32 size), but never shrink.
+// if needed (up too max uint16 size), but never shrink.
 func New(cap int) *Map {
 	if cap > maxSize {
 		panic(ErrToLarge)
 	}
 	return &Map{
-		strToInt: make(map[string]uint32, cap),
+		strToInt: make(map[string]uint16, cap),
 		intToStr: make([]string, cap),
 	}
 }
 
 // Add adds a string/uint entry to the Map. It will fail if string is
 // empty, or when maximum size of map is reached (TODO)
-func (m *Map) Add(s string, i uint32) error {
+func (m *Map) Add(s string, i uint16) error {
 	if s == "" {
 		return ErrEmptyString
 	}
@@ -59,7 +59,7 @@ func (m *Map) RemoveByStr(s string) error {
 
 // RemoveByInt removes string/uint pair with the given uint. It returns
 // ErrNotFound if the uint is not present in map.
-func (m *Map) RemoveByInt(i uint32) error {
+func (m *Map) RemoveByInt(i uint16) error {
 	if int(i) > len(m.intToStr) {
 		return ErrNotFound
 	}
@@ -69,7 +69,7 @@ func (m *Map) RemoveByInt(i uint32) error {
 }
 
 // FindByStr returns the uint which is paired with the given string, if it exists.
-func (m *Map) FindByStr(s string) (uint32, bool) {
+func (m *Map) FindByStr(s string) (uint16, bool) {
 	if i, ok := m.strToInt[s]; ok {
 		return i, true
 	}
@@ -77,7 +77,7 @@ func (m *Map) FindByStr(s string) (uint32, bool) {
 }
 
 // FindByInt returns the string which is paired with the given uint, if it exists.
-func (m *Map) FindByInt(i uint32) (string, bool) {
+func (m *Map) FindByInt(i uint16) (string, bool) {
 	if int(i) < len(m.intToStr) {
 		if s := m.intToStr[int(i)]; s != "" {
 			return s, true
@@ -87,8 +87,8 @@ func (m *Map) FindByInt(i uint32) (string, bool) {
 }
 
 // Size returns the size of the map (the number of string/uint pairs).
-func (m *Map) Size() uint32 {
-	return uint32(len(m.strToInt))
+func (m *Map) Size() uint16 {
+	return uint16(len(m.strToInt))
 }
 
 func min(a, b int) int {
