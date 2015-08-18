@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -523,7 +522,6 @@ func (db *Store) setup() (*Store, error) {
 		db.ns = bimap.New(max(stats.KeyN, 1))
 
 		for k, v := cur.First(); k != nil; k, v = cur.Next() {
-			fmt.Printf("%v => %v\n", btou16(k), string(v))
 			db.ns.Add(string(v), btou16(k))
 		}
 
