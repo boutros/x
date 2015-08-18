@@ -102,6 +102,9 @@ type Store struct {
 
 	mu sync.RWMutex // protects ns
 	ns *bimap.Map
+
+	// TODO: use and expose:
+	// Log *log.Logger
 }
 
 // Stats holds some statistics of the triple store.

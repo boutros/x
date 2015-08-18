@@ -185,11 +185,11 @@ func TestGraphTriples(t *testing.T) {
 }
 
 func TestLoadGraph(t *testing.T) {
-	// TODO repeat a triple, it should not be exist twice
 	input := `<s><p><o>.
 <s> <p> :b .
 <s> dc:a "f" . # invalid
-<s> <p> <o2> .`
+<s> <p> <o2> .
+<s><p><o>.`
 	g := Load(bytes.NewBufferString(input))
 
 	want := NewGraph().
@@ -199,4 +199,8 @@ func TestLoadGraph(t *testing.T) {
 	if !g.Eq(want) {
 		t.Errorf("Load(%q) => %v; want %v", input, g, want)
 	}
+}
+
+func TestRemoveTriplesFromGraph(t *testing.T) {
+	// TODO!
 }
