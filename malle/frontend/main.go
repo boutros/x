@@ -73,12 +73,13 @@ const htmlResource = `<!DOCTYPE html>
 </body>
 </html>`
 
-var titlePredicates = []rdf.IRI{
-	mustNewIRI("http://www.w3.org/2004/02/skos/core#prefLabel"),
-	mustNewIRI("http://purl.org/dc/terms/title"),
-	mustNewIRI("http://www.w3.org/2000/01/rdf-schema#label"),
-	mustNewIRI("http://xmlns.com/foaf/0.1/name"),
+var titlePreferences = map[rdf.Term]rdf.IRI{
+	mustNewIRI("http://lexvo.org/ontology#Language"):          mustNewIRI("http://www.w3.org/2008/05/skos#prefLabel"),
+	mustNewIRI("http://www.w3.org/2004/02/skos/core#Conecpt"): mustNewIRI("http://www.w3.org/2004/02/skos/core#prefLabel"),
+	mustNewIRI("http://xmlns.com/foaf/0.1/Person"):            mustNewIRI("http://xmlns.com/foaf/0.1/name"),
 }
+
+var rdfType = mustNewIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
 
 func mustNewIRI(iri string) rdf.IRI {
 	i, err := rdf.NewIRI(iri)
@@ -129,13 +130,11 @@ func main() {
 			panic("unreachable")
 		},
 		"chooseTitle": func(triples map[rdf.IRI]rdf.Terms) string {
-			// TODO could chose based on rdf:type:
-			// scos:Concept => skos:prefLabel
-			// foaf:Person => foaf:name
-			// etc..
-			for _, p := range titlePredicates {
-				if terms, ok := triples[p]; ok {
-					return terms[0].Value().(string) // randomize index for len(terms)?
+			if types, ok := triples[rdfType]; ok {
+				if titlePred, ok := titlePreferences[types[0]]; ok {
+					if titles, ok := triples[titlePred]; ok {
+						return titles[0].Value().(string)
+					}
 				}
 			}
 			return ""
