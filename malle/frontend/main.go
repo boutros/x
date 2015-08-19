@@ -82,7 +82,7 @@ const htmlResource = `<!DOCTYPE html>
 
 var titlePreferences = map[rdf.Term]rdf.IRI{
 	mustNewIRI("http://lexvo.org/ontology#Language"):          mustNewIRI("http://www.w3.org/2008/05/skos#prefLabel"),
-	mustNewIRI("http://www.w3.org/2004/02/skos/core#Conecpt"): mustNewIRI("http://www.w3.org/2004/02/skos/core#prefLabel"),
+	mustNewIRI("http://www.w3.org/2004/02/skos/core#Concept"): mustNewIRI("http://www.w3.org/2004/02/skos/core#prefLabel"),
 	mustNewIRI("http://xmlns.com/foaf/0.1/Person"):            mustNewIRI("http://xmlns.com/foaf/0.1/name"),
 }
 
