@@ -52,27 +52,31 @@ const htmlResource = `<!DOCTYPE html>
 		h1, h2, h3 { line-height: 1.2;}
 		td { padding-right: 2em; vertical-align: top; }
 		.grey { color: #aaa; }
+		.container { margint-bottom: 2em; }
 		.clearfix { clear: both; }
 		.predicate { width: 20%; float: left; }
-		.values { width: 80%; float: right }
-		.value { display: inline-block; margin-right: 1em; min-width: 200px; }
+		.values { width: 80%; float: right; position: relative; }
+		.count { position: absolute; left: -2.5em}
+		.literal { display: inline-block; margin-right: 1em; min-width: 200px; }
 	</style>
 </head>
 <body>
-	<div>
+	<div class="container">
 		<h2>{{.Props | chooseTitle}}</h2>
 		<h3>{{.Subj | html}}</h3>
 		<div>
 			{{range $pred, $terms := .Props}}
 				<div class="predicate clearfix" title="{{$pred | html}}">{{$pred | shortPred}}</div>
 				<div class="values">
+				{{if gt (len $terms) 1 }}<div class="count grey">{{len $terms}}</div>{{end}}
 				{{ range $obj := $terms}}
-					<div class="value">{{$obj | linkify}}</div>
+					<div {{if not (isLink $obj)}}class="literal"{{end}}>{{$obj | linkify}}</div>
 				{{end}}
 				</div>
 			{{end}}
 		</div>
 	</div>
+	<div class="clearfix"></div>
 </body>
 </html>`
 
@@ -107,6 +111,10 @@ func main() {
 		"shortPred": func(t rdf.Term) string {
 			s := t.Value().(string)
 			return shorten(s)
+		},
+		"isLink": func(term rdf.Term) bool {
+			_, ok := term.(rdf.IRI)
+			return ok
 		},
 		"linkify": func(term rdf.Term) template.HTML {
 			switch t := term.(type) {
