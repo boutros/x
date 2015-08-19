@@ -52,23 +52,26 @@ const htmlResource = `<!DOCTYPE html>
 		h1, h2, h3 { line-height: 1.2;}
 		td { padding-right: 2em; vertical-align: top; }
 		.grey { color: #aaa; }
+		.clearfix { clear: both; }
+		.predicate { width: 20%; float: left; }
+		.values { width: 80%; float: right }
+		.value { display: inline-block; margin-right: 1em; min-width: 200px; }
 	</style>
 </head>
 <body>
 	<div>
 		<h2>{{.Props | chooseTitle}}</h2>
 		<h3>{{.Subj | html}}</h3>
-		<table>
+		<div>
 			{{range $pred, $terms := .Props}}
+				<div class="predicate clearfix" title="{{$pred | html}}">{{$pred | shortPred}}</div>
+				<div class="values">
 				{{ range $obj := $terms}}
-					<tr>
-						<td title="{{$pred | html}}">{{$pred | shortPred}}</td>
-						<td>{{$obj | linkify}}</td>
-					</tr>
+					<div class="value">{{$obj | linkify}}</div>
 				{{end}}
+				</div>
 			{{end}}
-
-		</table>
+		</div>
 	</div>
 </body>
 </html>`
