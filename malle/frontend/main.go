@@ -142,6 +142,7 @@ func main() {
 			panic("unreachable")
 		},
 		"chooseTitle": func(triples map[rdf.IRI]rdf.Terms) string {
+			// TODO also have prefered language tag?
 			if types, ok := triples[rdfType]; ok {
 				if titlePred, ok := titlePreferences[types[0]]; ok {
 					if titles, ok := triples[titlePred]; ok {
