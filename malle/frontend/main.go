@@ -81,9 +81,10 @@ const htmlResource = `<!DOCTYPE html>
 </html>`
 
 var titlePreferences = map[rdf.Term]rdf.IRI{
-	mustNewIRI("http://lexvo.org/ontology#Language"):          mustNewIRI("http://www.w3.org/2008/05/skos#prefLabel"),
-	mustNewIRI("http://www.w3.org/2004/02/skos/core#Concept"): mustNewIRI("http://www.w3.org/2004/02/skos/core#prefLabel"),
-	mustNewIRI("http://xmlns.com/foaf/0.1/Person"):            mustNewIRI("http://xmlns.com/foaf/0.1/name"),
+	mustNewIRI("http://lexvo.org/ontology#Language"):                mustNewIRI("http://www.w3.org/2008/05/skos#prefLabel"),
+	mustNewIRI("http://www.w3.org/2004/02/skos/core#Concept"):       mustNewIRI("http://www.w3.org/2004/02/skos/core#prefLabel"),
+	mustNewIRI("http://www.w3.org/2004/02/skos/core#ConceptScheme"): mustNewIRI("http://purl.org/dc/terms/title"),
+	mustNewIRI("http://xmlns.com/foaf/0.1/Person"):                  mustNewIRI("http://xmlns.com/foaf/0.1/name"),
 }
 
 var rdfType = mustNewIRI("http://www.w3.org/1999/02/22-rdf-syntax-ns#type")
