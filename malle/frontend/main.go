@@ -49,15 +49,22 @@ const htmlResource = `<!DOCTYPE html>
 	<title>{{or (.Props | chooseTitle) .Subj}}</title>
 	<style type="text/css">
 		body { font-family: sans serif; margin: 40px auto; max-width: 1140px; line-height: 1.6; font-size: 18px; color: #222; padding: 0 10px }
-		h1, h2, h3 { line-height: 1.2;}
+		h1, h2, h3 { line-height: 1.2; }
+		h3 { border-top: 4px solid #222; padding-top: 0.5em; }
 		td { padding-right: 2em; vertical-align: top; }
+		a { text-decoration: none }
+		.right { text-align: right; }
 		.grey { color: #aaa; }
-		.container { margint-bottom: 2em; }
+		.container { margin-bottom: 2em; padding: 0 2em; }
 		.clearfix { clear: both; }
-		.predicate { width: 20%; float: left; }
-		.values { width: 80%; float: right; position: relative; }
-		.count { position: absolute; left: -2.5em}
+		.border { border-top: 1px solid #ccc; }
+		.props { margin-bottom: 0.5em;}
+		.predicate { width: 22%; float: left; box-sizing: border-box; padding-left: 0.5em; }
+		.values { width: 78%; float: right; position: relative; }
+		ul { list-style: none; padding: 0; margin: 0; }
+		li { padding: 0.15em; }
 		.literal { display: inline-block; margin-right: 1em; min-width: 200px; }
+		.resource { position: relative; }
 	</style>
 </head>
 <body>
@@ -66,15 +73,18 @@ const htmlResource = `<!DOCTYPE html>
 		<h3>{{.Subj | html}}</h3>
 		<div>
 			{{range $pred, $terms := .Props}}
-				<div class="predicate clearfix" title="{{$pred | html}}">{{$pred | shortPred}}</div>
-				<div class="values">
-				{{if gt (len $terms) 1 }}<div class="count grey">{{len $terms}}</div>{{end}}
-				{{ range $obj := $terms}}
-					<div {{if not (isLink $obj)}}class="literal"{{end}}>{{$obj | linkify}}</div>
-				{{end}}
+				<div class="props border clearfix">
+					<div class="predicate" title="{{$pred | html}}"><b>{{$pred | shortPred}}</b>{{if gt (len $terms) 1 }} <span class="grey">({{len $terms}})</span>{{end}}</div>
+					<ul class="values">
+					{{ range $obj := $terms}}
+						<li class={{if not (isLink $obj)}}"literal"{{else}}"resource"{{end}}>{{$obj | linkify}}</li>
+					{{end}}
+					</li>
 				</div>
 			{{end}}
 		</div>
+		<div class="clearfix"></div>
+		<h3 class="right">{{.Subj | html}}</h3>
 	</div>
 	<div class="clearfix"></div>
 </body>
@@ -120,7 +130,8 @@ func main() {
 		"linkify": func(term rdf.Term) template.HTML {
 			switch t := term.(type) {
 			case rdf.IRI:
-				link := fmt.Sprintf("<a href=\"/describe?IRI=%v\">%v</a>", template.HTMLEscapeString(t.Value().(string)), template.HTMLEscapeString(t.String()))
+				link := fmt.Sprintf("</a><a href=\"/describe?IRI=%v\">%v</a>",
+					template.HTMLEscapeString(t.Value().(string)), template.HTMLEscapeString(t.String()))
 				return template.HTML(link)
 			case rdf.Literal:
 				switch t.DataType().Value().(string) {
