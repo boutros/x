@@ -59,23 +59,25 @@ const htmlResource = `<!DOCTYPE html>
 		.clearfix { clear: both; }
 		.border { border-top: 1px solid #ccc; }
 		.props { margin-bottom: 0.5em;}
-		.predicate { width: 22%; float: left; box-sizing: border-box; padding-left: 0.5em; }
-		.values { width: 78%; float: right; position: relative; }
+		.wide { width: 78%; display: inline-block }
+		.narrow { width: 22%; display: inline-block }
+		.float-left { float: left; box-sizing: border-box; padding-left: 0.5em;}
+		.float-right { float: right;}
 		ul { list-style: none; padding: 0; margin: 0; }
 		li { padding: 0.15em; }
-		.literal { display: inline-block; margin-right: 1em; min-width: 200px; }
+		.literal { display: inline-block; margin-right: 1em; min-width: 30%; }
 		.resource { position: relative; }
 	</style>
 </head>
 <body>
 	<div class="container">
 		<h2>{{.Props | chooseTitle}}</h2>
-		<h3>{{.Subj | html}}</h3>
+		<h3>{{.Subj | html}} ⟶</h3>
 		<div>
 			{{range $pred, $terms := .Props}}
 				<div class="props border clearfix">
-					<div class="predicate" title="{{$pred | html}}"><b>{{$pred | shortPred}}</b>{{if gt (len $terms) 1 }} <span class="grey">({{len $terms}})</span>{{end}}</div>
-					<ul class="values">
+					<div class="narrow float-left" title="{{$pred | html}}"><b>{{$pred | shortPred}}</b>{{if gt (len $terms) 1 }} <span class="grey">({{len $terms}})</span>{{end}}</div>
+					<ul class="wide float-right">
 					{{ range $obj := $terms}}
 						<li class={{if not (isLink $obj)}}"literal"{{else}}"resource"{{end}}>{{$obj | linkify}}</li>
 					{{end}}
@@ -84,7 +86,17 @@ const htmlResource = `<!DOCTYPE html>
 			{{end}}
 		</div>
 		<div class="clearfix"></div>
-		<h3 class="right">{{.Subj | html}}</h3>
+		<h3 class="right">⟶ {{.Subj | html}}</h3>
+		<div>
+			{{range $pred, $subjs := .Incoming}}
+			<div class="props border clearfix">
+				<div class="narrow float-right"><b>{{$pred | shortPred}}</b>{{if gt (len $subjs) 1 }} <span class="grey">({{len $subjs}})</span>{{end}}</div>
+				{{range $s := $subjs}}
+					<div class="wide float-left">{{$s | linkify}}</div>
+				{{end}}
+			</div>
+			{{end}}
+		</div>
 	</div>
 	<div class="clearfix"></div>
 </body>
@@ -225,7 +237,7 @@ func main() {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		graph, err := db.Query(malle.NewQuery().Resource(iri))
+		graph, err := db.Query(malle.NewQuery().CBD(iri, 0))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -234,10 +246,23 @@ func main() {
 			http.Error(w, "No triples found", http.StatusNotFound)
 			return
 		}
+		incoming := make(map[rdf.IRI]rdf.Terms)
+		for s, props := range graph {
+			if !s.Eq(iri) {
+				for p := range props {
+					if t, ok := incoming[p]; ok {
+						incoming[p] = append(t, s)
+					} else {
+						incoming[p] = rdf.Terms{s}
+					}
+				}
+			}
+		}
 		tplResource.Execute(w, struct {
-			Subj  rdf.IRI
-			Props map[rdf.IRI]rdf.Terms
-		}{iri, graph[iri]})
+			Subj     rdf.IRI
+			Props    map[rdf.IRI]rdf.Terms
+			Incoming map[rdf.IRI]rdf.Terms
+		}{iri, graph[iri], incoming})
 	})
 	err = http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 	if err != nil {
