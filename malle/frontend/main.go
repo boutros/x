@@ -67,38 +67,59 @@ const htmlResource = `<!DOCTYPE html>
 		li { padding: 0.15em; }
 		.literal { display: inline-block; margin-right: 1em; min-width: 30%; }
 		.resource { position: relative; }
+		.hidden { display: none; }
+		.show-all { color: blue; background: #ffffaa; margin-left: 2em; }
+		.show-all:hover { cursor: pointer; }
 	</style>
 </head>
 <body>
 	<div class="container">
 		<h2>{{.Props | chooseTitle}}</h2>
-		<h3>{{.Subj | html}} ⟶</h3>
+		<h3>{{.Subj | html}} ⟹</h3>
 		<div>
 			{{range $pred, $terms := .Props}}
 				<div class="props border clearfix">
 					<div class="narrow float-left" title="{{$pred | html}}"><b>{{$pred | shortPred}}</b>{{if gt (len $terms) 1 }} <span class="grey">({{len $terms}})</span>{{end}}</div>
 					<ul class="wide float-right">
-					{{ range $obj := $terms}}
-						<li class={{if not (isLink $obj)}}"literal"{{else}}"resource"{{end}}>{{$obj | linkify}}</li>
+					{{range $i, $obj := $terms}}
+						<li class="{{if not (isLink $obj)}}{{if (gt $i 20)}}hidden {{end}}literal{{else}}{{if (gt $i 10)}}hidden {{end}}resource{{end}}">{{$obj | linkify}}</li>
+					{{end}}
+					{{if (isLink (index $terms 0))}}
+						{{if (gt (len $terms) 10)}}<div class="wide float-left"><a class="show-all">show all {{len $terms}}...</a></div>{{end}}
+					{{else}}
+						{{if (gt (len $terms) 20)}}<div class="wide float-left"><a class="show-all">show all {{len $terms}}...</a></div>{{end}}
 					{{end}}
 					</li>
 				</div>
 			{{end}}
 		</div>
 		<div class="clearfix"></div>
-		<h3 class="right">⟶ {{.Subj | html}}</h3>
+		<h3 class="right">⟹ {{.Subj | html}}</h3>
 		<div>
 			{{range $pred, $subjs := .Incoming}}
 			<div class="props border clearfix">
 				<div class="narrow float-right"><b>{{$pred | shortPred}}</b>{{if gt (len $subjs) 1 }} <span class="grey">({{len $subjs}})</span>{{end}}</div>
-				{{range $s := $subjs}}
-					<div class="wide float-left">{{$s | linkify}}</div>
+				{{range $i, $s := $subjs}}
+					<div class="{{if (gt $i 10)}}hidden {{end}}wide float-left">{{$s | linkify}}</div>
 				{{end}}
+				{{if (gt (len $subjs) 10)}}<div class="wide float-left"><a class="show-all">show all {{len $subjs}}...</a></div>{{end}}
 			</div>
 			{{end}}
 		</div>
 	</div>
 	<div class="clearfix"></div>
+	<script>
+		var els = document.getElementsByClassName("show-all");
+		[].forEach.call(els, function(el) {
+			el.addEventListener("click", function(e) {
+				var hidden = e.target.parentNode.parentNode.getElementsByClassName("hidden");
+				[].slice.call(hidden).forEach(function(h) {
+					h.classList.remove("hidden");
+				});
+				el.parentNode.removeChild(el);
+			});
+		});
+	</script>
 </body>
 </html>`
 
