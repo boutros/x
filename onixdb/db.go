@@ -27,18 +27,14 @@ func Open(path string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	cdc, err := newPrimedCodec(&onix.Product{})
+	codec, err := newPrimedCodec(&onix.Product{})
 	if err != nil {
 		return nil, err
 	}
 	db := &DB{
-		kv: kv,
-		encPool: sync.Pool{New: func() interface{} {
-			return cdc.NewMarshaler()
-		}},
-		decPool: sync.Pool{New: func() interface{} {
-			return cdc.NewUnmarshaler()
-		}},
+		kv:      kv,
+		encPool: sync.Pool{New: func() interface{} { return codec.NewMarshaler() }},
+		decPool: sync.Pool{New: func() interface{} { return codec.NewUnmarshaler() }},
 	}
 	return db.setup()
 }
