@@ -83,22 +83,4 @@
       </Territory>
     </SalesRights>
   </PublishingDetail>
-  <RelatedMaterial></RelatedMaterial>
-  <ProductSupply>
-    <SupplyDetail>
-      <Supplier>
-        <SupplierRole>03</SupplierRole>
-        <SupplierName>My Supplier Name</SupplierName>
-      </Supplier>
-      <ProductAvailability>20</ProductAvailability>
-      <Price>
-        <PriceType>02</PriceType>
-        <PriceAmount>9.99</PriceAmount>
-        <CurrencyCode>USD</CurrencyCode>
-        <Territory>
-          <CountriesIncluded>US</CountriesIncluded>
-        </Territory>
-      </Price>
-    </SupplyDetail>
-  </ProductSupply>
 </Product>
