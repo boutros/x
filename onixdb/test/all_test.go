@@ -12,7 +12,7 @@ import (
 	"github.com/knakk/kbp/onix"
 )
 
-const records = `
+var records = []byte(`
 <Products>
 <Product>
   <RecordReference>id.0</RecordReference>
@@ -141,7 +141,7 @@ const records = `
   </PublishingDetail>
 </Product>
 </Products>
-`
+`)
 
 func TestAll(t *testing.T) {
 	f := tempfile()
@@ -157,7 +157,7 @@ func TestAll(t *testing.T) {
 		Product []*onix.Product
 	}
 	var products Products
-	if err := xml.Unmarshal([]byte(records), &products); err != nil {
+	if err := xml.Unmarshal(records, &products); err != nil {
 		t.Fatal(err)
 	}
 
@@ -179,7 +179,7 @@ func TestAll(t *testing.T) {
 			t.Fatal(err)
 		}
 		if !reflect.DeepEqual(p, products.Product[n]) {
-			t.Error("stored record not equal. Got:\n%v\nWant:\n%v", p, products.Product[i])
+			t.Errorf("stored record not equal. Got:\n%v\nWant:\n%v", p, products.Product[i])
 		}
 	}
 }
