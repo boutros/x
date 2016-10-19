@@ -101,6 +101,18 @@ func (db *DB) Store(p *onix.Product) (id uint32, err error) {
 	return id, err
 }
 
+type IndexEntry struct {
+	Index string
+	Entry string
+}
+
+type IndexFn func(*onix.Product) []IndexEntry
+
+// func (db *DB) Inidices() []string
+// func (db *DB) DeleteIndex(index string) error
+// func (db *DB) Scan(index, start string, limit int) ([]string, error)
+// func (db *DB) Query(index, query string, limit int) ([]*onix.Product, error)
+
 // u32tob converts a uint32 into a 4-byte slice.
 func u32tob(v uint32) []byte {
 	b := make([]byte, 4)
@@ -112,14 +124,3 @@ func u32tob(v uint32) []byte {
 func btou32(b []byte) uint32 {
 	return binary.BigEndian.Uint32(b)
 }
-
-/*
-
-type IndexEntry struct {
-	Index string
-	Entry string
-}
-
-type IndexFn func(onix.Product) []IndexEntry
-
-*/
