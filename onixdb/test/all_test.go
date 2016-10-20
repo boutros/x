@@ -2,6 +2,7 @@ package test
 
 import (
 	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -70,7 +71,7 @@ var records = []byte(`
       <TitleElement>
         <TitleElementLevel>01</TitleElementLevel>
         <NoPrefix></NoPrefix>
-        <TitleWithoutPrefix textcase="01">Book B</TitleWithoutPrefix>
+        <TitleWithoutPrefix textcase="01">Book Book</TitleWithoutPrefix>
       </TitleElement>
     </TitleDetail>
     <Contributor>
@@ -81,7 +82,7 @@ var records = []byte(`
         <IDValue>0000000001</IDValue>
       </NameIdentifier>
       <NamesBeforeKey>Kari</NamesBeforeKey>
-      <KeyNames>Hansen</KeyNames>
+      <KeyNames>Jensen</KeyNames>
     </Contributor>
     <NoEdition></NoEdition>
     <Subject>
@@ -128,7 +129,7 @@ var records = []byte(`
     <NoEdition></NoEdition>
     <Subject>
       <SubjectSchemeIdentifier>20</SubjectSchemeIdentifier>
-      <SubjectHeadingText>Subject C</SubjectHeadingText>
+      <SubjectHeadingText>Subject A2</SubjectHeadingText>
     </Subject>
   </DescriptiveDetail>
   <PublishingDetail>
@@ -143,10 +144,53 @@ var records = []byte(`
 </Products>
 `)
 
+func indexFn(p *onix.Product) (res []onixdb.IndexEntry) {
+	// ISBN
+	for _, id := range p.ProductIdentifier {
+		if id.ProductIDType.Value == "03" {
+			res = append(res, onixdb.IndexEntry{
+				Index: "isbn",
+				Entry: id.IDValue.Value,
+			})
+		}
+	}
+
+	// Title
+	for _, td := range p.DescriptiveDetail.TitleDetail {
+		for _, te := range td.TitleElement {
+			res = append(res, onixdb.IndexEntry{
+				Index: "title",
+				Entry: te.TitleWithoutPrefix.Value,
+			})
+		}
+	}
+
+	// Contributor
+	for _, c := range p.DescriptiveDetail.Contributor {
+		res = append(res, onixdb.IndexEntry{
+			Index: "author",
+			Entry: fmt.Sprintf("%s, %s", c.KeyNames.Value, c.NamesBeforeKey.Value),
+		})
+	}
+
+	// Subject
+	for _, s := range p.DescriptiveDetail.Subject {
+		for _, st := range s.SubjectHeadingText {
+			res = append(res, onixdb.IndexEntry{
+				Index: "subject",
+				Entry: st.Value,
+			})
+
+		}
+	}
+
+	return res
+}
+
 func TestAll(t *testing.T) {
 	f := tempfile()
 	defer os.Remove(f)
-	db, err := onixdb.Open(f)
+	db, err := onixdb.Open(f, indexFn)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -182,6 +226,45 @@ func TestAll(t *testing.T) {
 			t.Errorf("stored record not equal. Got:\n%v\nWant:\n%v", p, products.Product[i])
 		}
 	}
+
+	searchTests := []struct {
+		idx   string
+		q     string
+		scans []string
+		prods []uint32
+	}{
+		{
+			idx:   "isbn",
+			q:     "9780000000",
+			scans: []string{"9780000000111", "9780000000222", "9780000000333"},
+			prods: []uint32{ids[0], ids[1], ids[2]},
+		},
+		{
+			idx:   "isbn",
+			q:     "97800000001",
+			scans: []string{"9780000000111"},
+			prods: []uint32{ids[0]},
+		},
+		{
+			idx:   "title",
+			q:     "BOOK B",
+			scans: []string{"book book"},
+			prods: []uint32{ids[1]},
+		},
+		{
+			idx:   "author",
+			q:     "Jensen",
+			scans: []string{"jensen, ole", "jensen, kari"},
+			prods: []uint32{ids[0], ids[1]},
+		},
+		{
+			idx:   "subject",
+			q:     "Subject a",
+			scans: []string{"subject a", "subject a2"},
+			prods: []uint32{ids[0], ids[2]},
+		},
+	}
+
 }
 
 func checked(t *testing.T, f func() error) {

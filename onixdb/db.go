@@ -3,6 +3,7 @@ package onixdb
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/boltdb/bolt"
@@ -20,9 +21,10 @@ type DB struct {
 	kv      *bolt.DB
 	encPool sync.Pool
 	decPool sync.Pool
+	indexFn IndexFn
 }
 
-func Open(path string) (*DB, error) {
+func Open(path string, fn IndexFn) (*DB, error) {
 	kv, err := bolt.Open(path, 0666, nil)
 	if err != nil {
 		return nil, err
@@ -35,6 +37,7 @@ func Open(path string) (*DB, error) {
 		kv:      kv,
 		encPool: sync.Pool{New: func() interface{} { return codec.NewMarshaler() }},
 		decPool: sync.Pool{New: func() interface{} { return codec.NewUnmarshaler() }},
+		indexFn: fn,
 	}
 	return db.setup()
 }
@@ -96,6 +99,9 @@ func (db *DB) Store(p *onix.Product) (id uint32, err error) {
 		if err := bkt.Put(idb, b); err != nil {
 			return err
 		}
+
+		entries := db.indexFn(p)
+		fmt.Printf("%v\n", entries)
 		return nil
 	})
 	return id, err
