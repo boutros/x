@@ -1,11 +1,14 @@
 package onixdb
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
+	"github.com/RoaringBitmap/roaring"
 	"github.com/boltdb/bolt"
 	"github.com/knakk/kbp/onix"
 )
@@ -49,7 +52,7 @@ func (db *DB) Close() error {
 func (db *DB) setup() (*DB, error) {
 	// set up required buckets
 	err := db.kv.Update(func(tx *bolt.Tx) error {
-		for _, b := range [][]byte{[]byte("products"), []byte("indices")} {
+		for _, b := range [][]byte{[]byte("products"), []byte("indexes")} {
 			_, err := tx.CreateBucketIfNotExists(b)
 			if err != nil {
 				return err
@@ -100,11 +103,41 @@ func (db *DB) Store(p *onix.Product) (id uint32, err error) {
 			return err
 		}
 
-		entries := db.indexFn(p)
-		fmt.Printf("%v\n", entries)
-		return nil
+		return db.index(tx, p, id)
 	})
 	return id, err
+}
+
+func (db *DB) index(tx *bolt.Tx, p *onix.Product, id uint32) error {
+	entries := db.indexFn(p)
+	for _, e := range entries {
+		bkt, err := tx.Bucket([]byte("indexes")).CreateBucketIfNotExists([]byte(e.Index))
+		if err != nil {
+			return err
+		}
+
+		term := []byte(strings.ToLower(e.Entry))
+		hits := roaring.NewBitmap()
+
+		bo := bkt.Get(term)
+		if bo != nil {
+			if _, err := hits.ReadFrom(bytes.NewReader(bo)); err != nil {
+				return err
+			}
+		}
+
+		hits.Add(id)
+
+		hitsb, err := hits.MarshalBinary()
+		if err != nil {
+			return err
+		}
+
+		if err := bkt.Put(term, hitsb); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type IndexEntry struct {
@@ -114,9 +147,46 @@ type IndexEntry struct {
 
 type IndexFn func(*onix.Product) []IndexEntry
 
-// func (db *DB) Inidices() []string
+// Indexes returns the list of indicies in use.
+func (db *DB) Indexes() (res []string) {
+	db.kv.View(func(tx *bolt.Tx) error {
+		bkt := tx.Bucket([]byte("indexes"))
+		c := bkt.Cursor()
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			if v == nil {
+				res = append(res, string(k))
+			}
+		}
+		return nil
+	})
+	return res
+}
+
+func (db *DB) Scan(index, start string, limit int) (res []string, err error) {
+	err = db.kv.View(func(tx *bolt.Tx) error {
+		bkt := tx.Bucket([]byte("indexes")).Bucket([]byte(index))
+		if bkt == nil {
+			return fmt.Errorf("index not found: %s", index)
+		}
+		cur := bkt.Cursor()
+		n := 0
+		term := []byte(strings.ToLower(start))
+		for k, _ := cur.Seek(term); k != nil; k, _ = cur.Next() {
+			if n > limit {
+				break
+			}
+			if !bytes.HasPrefix(k, term) {
+				break
+			}
+			res = append(res, string(k))
+			n++
+		}
+		return nil
+	})
+	return res, err
+}
+
 // func (db *DB) DeleteIndex(index string) error
-// func (db *DB) Scan(index, start string, limit int) ([]string, error)
 // func (db *DB) Query(index, query string, limit int) ([]*onix.Product, error)
 
 // u32tob converts a uint32 into a 4-byte slice.

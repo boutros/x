@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/boutros/x/onixdb"
@@ -205,6 +206,10 @@ func TestAll(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// Verify that there are no indexes in an empty db
+	if len(db.Indexes()) != 0 {
+		t.Fatal("indexes not empty: %v", db.Indexes())
+	}
 	// Verify that records can be stored and given an ID.
 	ids := make([]uint32, len(products.Product))
 	for i, p := range products.Product {
@@ -225,6 +230,14 @@ func TestAll(t *testing.T) {
 		if !reflect.DeepEqual(p, products.Product[n]) {
 			t.Errorf("stored record not equal. Got:\n%v\nWant:\n%v", p, products.Product[i])
 		}
+	}
+
+	// Verify that we have indexes used in indexFn
+	want := []string{"author", "isbn", "subject", "title"}
+	got := db.Indexes()
+	sort.Sort(sort.StringSlice(got))
+	if !reflect.DeepEqual(want, got) {
+		t.Fatalf("db.Indicies() => %v; want %v", got, want)
 	}
 
 	searchTests := []struct {
@@ -254,7 +267,7 @@ func TestAll(t *testing.T) {
 		{
 			idx:   "author",
 			q:     "Jensen",
-			scans: []string{"jensen, ole", "jensen, kari"},
+			scans: []string{"jensen, kari", "jensen, ole"},
 			prods: []uint32{ids[0], ids[1]},
 		},
 		{
@@ -263,6 +276,16 @@ func TestAll(t *testing.T) {
 			scans: []string{"subject a", "subject a2"},
 			prods: []uint32{ids[0], ids[2]},
 		},
+	}
+
+	for _, test := range searchTests {
+		scans, err := db.Scan(test.idx, test.q, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(scans, test.scans) {
+			t.Errorf("db.Scan(%s, %s, 10) => %v; want %v", test.idx, test.q, scans, test.scans)
+		}
 	}
 
 }
