@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/boutros/x/onixdb"
@@ -46,7 +47,7 @@ var records = []byte(`
     <NoEdition></NoEdition>
     <Subject>
       <SubjectSchemeIdentifier>20</SubjectSchemeIdentifier>
-      <SubjectHeadingText>Subject A</SubjectHeadingText>
+      <SubjectHeadingText>Subject Ape</SubjectHeadingText>
     </Subject>
   </DescriptiveDetail>
   <PublishingDetail>
@@ -72,7 +73,7 @@ var records = []byte(`
       <TitleElement>
         <TitleElementLevel>01</TitleElementLevel>
         <NoPrefix></NoPrefix>
-        <TitleWithoutPrefix textcase="01">Book Book</TitleWithoutPrefix>
+        <TitleWithoutPrefix textcase="01">Book Babel</TitleWithoutPrefix>
       </TitleElement>
     </TitleDetail>
     <Contributor>
@@ -130,7 +131,7 @@ var records = []byte(`
     <NoEdition></NoEdition>
     <Subject>
       <SubjectSchemeIdentifier>20</SubjectSchemeIdentifier>
-      <SubjectHeadingText>Subject A2</SubjectHeadingText>
+      <SubjectHeadingText>Subject Api</SubjectHeadingText>
     </Subject>
   </DescriptiveDetail>
   <PublishingDetail>
@@ -159,10 +160,12 @@ func indexFn(p *onix.Product) (res []onixdb.IndexEntry) {
 	// Title
 	for _, td := range p.DescriptiveDetail.TitleDetail {
 		for _, te := range td.TitleElement {
-			res = append(res, onixdb.IndexEntry{
-				Index: "title",
-				Entry: te.TitleWithoutPrefix.Value,
-			})
+			for _, s := range strings.Split(te.TitleWithoutPrefix.Value, " ") {
+				res = append(res, onixdb.IndexEntry{
+					Index: "title",
+					Entry: s,
+				})
+			}
 		}
 	}
 
@@ -171,6 +174,14 @@ func indexFn(p *onix.Product) (res []onixdb.IndexEntry) {
 		res = append(res, onixdb.IndexEntry{
 			Index: "author",
 			Entry: fmt.Sprintf("%s, %s", c.KeyNames.Value, c.NamesBeforeKey.Value),
+		})
+		res = append(res, onixdb.IndexEntry{
+			Index: "author",
+			Entry: c.KeyNames.Value,
+		})
+		res = append(res, onixdb.IndexEntry{
+			Index: "author",
+			Entry: c.NamesBeforeKey.Value,
 		})
 	}
 
@@ -241,40 +252,46 @@ func TestAll(t *testing.T) {
 	}
 
 	searchTests := []struct {
-		idx   string
-		q     string
-		scans []string
-		prods []uint32
+		idx      string
+		q        string
+		scans    []string
+		products []uint32
 	}{
 		{
-			idx:   "isbn",
-			q:     "9780000000",
-			scans: []string{"9780000000111", "9780000000222", "9780000000333"},
-			prods: []uint32{ids[0], ids[1], ids[2]},
+			idx:      "isbn",
+			q:        "9780000000",
+			scans:    []string{"9780000000111", "9780000000222", "9780000000333"},
+			products: nil,
 		},
 		{
-			idx:   "isbn",
-			q:     "97800000001",
-			scans: []string{"9780000000111"},
-			prods: []uint32{ids[0]},
+			idx:      "isbn",
+			q:        "9780000000111",
+			scans:    []string{"9780000000111"},
+			products: []uint32{ids[0]},
 		},
 		{
-			idx:   "title",
-			q:     "BOOK B",
-			scans: []string{"book book"},
-			prods: []uint32{ids[1]},
+			idx:      "title",
+			q:        "babel",
+			scans:    []string{"babel"},
+			products: []uint32{ids[1]},
 		},
 		{
-			idx:   "author",
-			q:     "Jensen",
-			scans: []string{"jensen, kari", "jensen, ole"},
-			prods: []uint32{ids[0], ids[1]},
+			idx:      "author",
+			q:        "jens",
+			scans:    []string{"jens", "jensen", "jensen, kari", "jensen, ole"},
+			products: []uint32{ids[2]},
 		},
 		{
-			idx:   "subject",
-			q:     "Subject a",
-			scans: []string{"subject a", "subject a2"},
-			prods: []uint32{ids[0], ids[2]},
+			idx:      "author",
+			q:        "jensen",
+			scans:    []string{"jensen", "jensen, kari", "jensen, ole"},
+			products: []uint32{ids[0], ids[1]},
+		},
+		{
+			idx:      "subject",
+			q:        "Subject a",
+			scans:    []string{"subject ape", "subject api"},
+			products: nil,
 		},
 	}
 
@@ -285,6 +302,14 @@ func TestAll(t *testing.T) {
 		}
 		if !reflect.DeepEqual(scans, test.scans) {
 			t.Errorf("db.Scan(%s, %s, 10) => %v; want %v", test.idx, test.q, scans, test.scans)
+		}
+
+		ids, err := db.Query(test.idx, test.q, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(ids, test.products) {
+			t.Errorf("db.Query(%s, %s, 10) => %v; want %v", test.idx, test.q, ids, test.products)
 		}
 	}
 

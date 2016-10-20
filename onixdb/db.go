@@ -117,7 +117,7 @@ func (db *DB) index(tx *bolt.Tx, p *onix.Product, id uint32) error {
 		}
 
 		term := []byte(strings.ToLower(e.Entry))
-		hits := roaring.NewBitmap()
+		hits := roaring.New()
 
 		bo := bkt.Get(term)
 		if bo != nil {
@@ -186,8 +186,30 @@ func (db *DB) Scan(index, start string, limit int) (res []string, err error) {
 	return res, err
 }
 
+func (db *DB) Query(index, query string, limit int) (res []uint32, err error) {
+	err = db.kv.View(func(tx *bolt.Tx) error {
+		bkt := tx.Bucket([]byte("indexes")).Bucket([]byte(index))
+		if bkt == nil {
+			return fmt.Errorf("index not found: %s", index)
+		}
+		bo := bkt.Get([]byte(strings.ToLower(query)))
+
+		if bo == nil {
+			return nil
+		}
+
+		hits := roaring.New()
+		if _, err := hits.ReadFrom(bytes.NewReader(bo)); err != nil {
+			return err
+		}
+		res = hits.ToArray()
+
+		return nil
+	})
+	return res, err
+}
+
 // func (db *DB) DeleteIndex(index string) error
-// func (db *DB) Query(index, query string, limit int) ([]*onix.Product, error)
 
 // u32tob converts a uint32 into a 4-byte slice.
 func u32tob(v uint32) []byte {
