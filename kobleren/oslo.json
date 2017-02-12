@@ -1,0 +1,378 @@
+{"took":45,"timed_out":false,"_shards":{"total":5,"successful":5,"failed":0},"hits":{"total":8068,"max_score":3.7170944,"hits":[{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc22935000","_score":3.7170944,"_source":{
+  "name": "Oslo Spektrum",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c22935000"
+}},{"_index":"search","_type":"work","_id":"http%3A%2F%2Fdata.deichman.no%2Fwork%2Fwf6c7212f7708a7a31f153dc27a33290d","_score":3.694923,"_source":{
+  "contributors": [],
+  "uri": "http://data.deichman.no/work/wf6c7212f7708a7a31f153dc27a33290d",
+  "mainTitle": "Oslo - Strømstad - Oslo"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc17997100","_score":3.0933194,"_source":{
+  "name": "Oslo Vei",
+  "specification": "Oslo veivesen",
+  "uri": "http://data.deichman.no/corporation/c17997100"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc33073500","_score":3.0791023,"_source":{
+  "name": "Oslo nye teater",
+  "specification": "Oslo",
+  "subdivision": "Dukketeateret",
+  "uri": "http://data.deichman.no/corporation/c33073500"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc34675100","_score":3.0664463,"_source":{
+  "name": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c34675100"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc11322900","_score":2.6283827,"_source":{
+  "name": "Ruseløkka skole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c11322900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc33525000","_score":2.6283827,"_source":{
+  "name": "Lunde forlag",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c33525000"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc14739300","_score":2.6283827,"_source":{
+  "name": "Oslo katedralskole",
+  "uri": "http://data.deichman.no/corporation/c14739300"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc31603400","_score":2.6283827,"_source":{
+  "name": "Nonneseter kloster",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c31603400"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc14945200","_score":2.6283827,"_source":{
+  "name": "Fagerborg skole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c14945200"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc11322200","_score":2.6283827,"_source":{
+  "name": "Møllergata skole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c11322200"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc11210300","_score":2.6283827,"_source":{
+  "name": "Ovrums forlag",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c11210300"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc29920800","_score":2.6283827,"_source":{
+  "name": "Oslo kommune",
+  "subdivision": "Byantikvaren",
+  "uri": "http://data.deichman.no/corporation/c29920800"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc30074900","_score":2.6283827,"_source":{
+  "name": "Blitz",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c30074900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc31122200","_score":2.6283827,"_source":{
+  "name": "Bredtvet kirke",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c31122200"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc13846800","_score":2.6283827,"_source":{
+  "name": "AXESS",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c13846800"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc26196600","_score":2.6283827,"_source":{
+  "name": "Andvord, Rich.",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c26196600"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc26825300","_score":2.6283827,"_source":{
+  "name": "Pellerin",
+  "subdivision": "Oslo margarinfabrikk",
+  "uri": "http://data.deichman.no/corporation/c26825300"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc22994800","_score":2.6283827,"_source":{
+  "name": "Oslo fiskehall",
+  "uri": "http://data.deichman.no/corporation/c22994800"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc12233400","_score":2.6283827,"_source":{
+  "name": "Skøyen hovedgård",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c12233400"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc26614400","_score":2.6283827,"_source":{
+  "name": "Johansens boktrykkeri",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c26614400"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc18309700","_score":2.6283827,"_source":{
+  "name": "Oslo pølsemakerlaug",
+  "uri": "http://data.deichman.no/corporation/c18309700"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc277131269167","_score":2.6283827,"_source":{
+  "name": "Omnipax",
+  "placePrefLabel": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c277131269167"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc187673478917","_score":2.6283827,"_source":{
+  "name": "Kom ",
+  "placePrefLabel": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c187673478917"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc26544100","_score":2.6283827,"_source":{
+  "name": "Stortorvets gjæstgivere",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c26544100"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc31205700","_score":2.6283827,"_source":{
+  "name": "Oslo kommunale legevakt",
+  "uri": "http://data.deichman.no/corporation/c31205700"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc26805700","_score":2.6283827,"_source":{
+  "name": "Thau reklamebyrå",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c26805700"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc18326100","_score":2.6283827,"_source":{
+  "name": "Ljan skole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c18326100"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc16918100","_score":2.6283827,"_source":{
+  "name": "Pax",
+  "specification": "Forlag, Oslo",
+  "uri": "http://data.deichman.no/corporation/c16918100"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc18028200","_score":2.6283827,"_source":{
+  "name": "Oslo sparebank",
+  "uri": "http://data.deichman.no/corporation/c18028200"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc29720600","_score":2.6283827,"_source":{
+  "name": "Fagerborg menighet",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c29720600"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc29121400","_score":2.6283827,"_source":{
+  "name": "Universitetsforlaget",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c29121400"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc2047590300","_score":2.6283827,"_source":{
+  "name": "Oslo songdanslag",
+  "uri": "http://data.deichman.no/corporation/c2047590300"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc18115600","_score":2.6283827,"_source":{
+  "name": "Oslo",
+  "subdivision": "Ligningskommisjonen",
+  "uri": "http://data.deichman.no/corporation/c18115600"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc25567700","_score":2.6283827,"_source":{
+  "name": "Oslo Trio",
+  "uri": "http://data.deichman.no/corporation/c25567700"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc24289500","_score":2.6283827,"_source":{
+  "name": "Informasjonssenteret",
+  "subdivision": "Oslo kommune",
+  "uri": "http://data.deichman.no/corporation/c24289500"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc29365100","_score":2.6283827,"_source":{
+  "name": "Nordstrand kirke",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c29365100"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc25866700","_score":2.6283827,"_source":{
+  "name": "Tandbergs radiofabrikk",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c25866700"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc17881900","_score":2.6283827,"_source":{
+  "name": "Teater Dybbuk",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c17881900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc27644400","_score":2.6283827,"_source":{
+  "name": "Oslo bispedømme",
+  "uri": "http://data.deichman.no/corporation/c27644400"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc2042488800","_score":2.6283827,"_source":{
+  "name": "Deichmanske bibliotek",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c2042488800"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc16481800","_score":2.6283827,"_source":{
+  "name": "Universitetet i Oslo",
+  "uri": "http://data.deichman.no/corporation/c16481800"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc10520900","_score":2.6283827,"_source":{
+  "name": "Cappelens kartinstitutt",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c10520900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc2040508200","_score":2.6283827,"_source":{
+  "name": "Oslo Børs",
+  "specification": "Rockegruppe",
+  "uri": "http://data.deichman.no/corporation/c2040508200"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc14158200","_score":2.6283827,"_source":{
+  "name": "Norsk korrespondanseskole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c14158200"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc32552300","_score":2.6283827,"_source":{
+  "name": "Hovedøya kloster",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c32552300"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc16242300","_score":2.6283827,"_source":{
+  "name": "Folkets brevskole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c16242300"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc15039500","_score":2.6283827,"_source":{
+  "name": "Norske Hageselskap",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c15039500"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc18335000","_score":2.6283827,"_source":{
+  "name": "Trønderlaget i Oslo",
+  "uri": "http://data.deichman.no/corporation/c18335000"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc21283800","_score":2.6283827,"_source":{
+  "name": "Oslo mentalhygieninske forening",
+  "uri": "http://data.deichman.no/corporation/c21283800"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc17301900","_score":2.6283827,"_source":{
+  "name": "Bekkelaget skole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c17301900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc28623400","_score":2.6283827,"_source":{
+  "name": "Berles pikeskole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c28623400"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc13676500","_score":2.6283827,"_source":{
+  "name": "Nielsens skole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c13676500"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc23684300","_score":2.6283827,"_source":{
+  "name": "Norske selskab",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c23684300"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc10379200","_score":2.6283827,"_source":{
+  "name": "Oslo bymuseum",
+  "uri": "http://data.deichman.no/corporation/c10379200"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc26093900","_score":2.6283827,"_source":{
+  "name": "Juristforeningen",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c26093900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc29782700","_score":2.6283827,"_source":{
+  "name": "Oslo blåsekvintett",
+  "uri": "http://data.deichman.no/corporation/c29782700"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc31109100","_score":2.6283827,"_source":{
+  "name": "Oslo framhaldsskole",
+  "subdivision": "Jenteskolen",
+  "uri": "http://data.deichman.no/corporation/c31109100"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc29483500","_score":2.6283827,"_source":{
+  "name": "Oslo sporveier",
+  "subdivision": "Informasjonsavdelingen",
+  "uri": "http://data.deichman.no/corporation/c29483500"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc26487100","_score":2.6283827,"_source":{
+  "name": "Rosenborgkomplekset",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c26487100"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc27915400","_score":2.6283827,"_source":{
+  "name": "Oslo kommunale handelsskole",
+  "uri": "http://data.deichman.no/corporation/c27915400"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc34540900","_score":2.6283827,"_source":{
+  "name": "Oslo musikklærerforening",
+  "uri": "http://data.deichman.no/corporation/c34540900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc32625600","_score":2.6283827,"_source":{
+  "name": "Høstutstillingen",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c32625600"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc14760500","_score":2.6283827,"_source":{
+  "name": "Krigsinvalideforbundet",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c14760500"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc19775700","_score":2.6283827,"_source":{
+  "name": "Oslo kvinnelige roklubb",
+  "uri": "http://data.deichman.no/corporation/c19775700"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc29157800","_score":2.6283827,"_source":{
+  "name": "Oslo data",
+  "specification": "datafirma",
+  "uri": "http://data.deichman.no/corporation/c29157800"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc32387000","_score":2.6283827,"_source":{
+  "name": "Studentmållaget i Oslo",
+  "uri": "http://data.deichman.no/corporation/c32387000"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc28623500","_score":2.6283827,"_source":{
+  "name": "Falsens pigeskole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c28623500"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc25079100","_score":2.6283827,"_source":{
+  "name": "Rådhuskomiteen",
+  "specification": "Oslo",
+  "subdivision": "Juryen",
+  "uri": "http://data.deichman.no/corporation/c25079100"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc25241800","_score":2.6283827,"_source":{
+  "name": "Menighetssøsterhjemmet",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c25241800"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc15527900","_score":2.6283827,"_source":{
+  "name": "Lakkegata skole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c15527900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc18204600","_score":2.6283827,"_source":{
+  "name": "Norske radiumhospital",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c18204600"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc19172700","_score":2.6283827,"_source":{
+  "name": "Handelsreisendes forening",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c19172700"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc18205400","_score":2.6283827,"_source":{
+  "name": "Oslo sanitetsforening",
+  "uri": "http://data.deichman.no/corporation/c18205400"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc25045900","_score":2.6283827,"_source":{
+  "name": "Oslo domkirke",
+  "uri": "http://data.deichman.no/corporation/c25045900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc17955400","_score":2.6283827,"_source":{
+  "name": "Oslo kommune",
+  "subdivision": "Boligrådet",
+  "uri": "http://data.deichman.no/corporation/c17955400"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc2039140300","_score":2.6283827,"_source":{
+  "name": "Tøyen skole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c2039140300"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc26039900","_score":2.6283827,"_source":{
+  "name": "Vinterlandbruksskolen",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c26039900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc26239700","_score":2.6283827,"_source":{
+  "name": "Mariakirken",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c26239700"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc2044613500","_score":2.6283827,"_source":{
+  "name": "Ryen gård",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c2044613500"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc11643200","_score":2.6283827,"_source":{
+  "name": "Oslo kristelige studentforbund",
+  "uri": "http://data.deichman.no/corporation/c11643200"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc20581600","_score":2.6283827,"_source":{
+  "name": "Mittet",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c20581600"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc2039924500","_score":2.6283827,"_source":{
+  "name": "Bjølsen gård",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c2039924500"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc28426600","_score":2.6283827,"_source":{
+  "name": "Oslo velocipedklubb",
+  "uri": "http://data.deichman.no/corporation/c28426600"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc24026400","_score":2.6283827,"_source":{
+  "name": "Berger snekkerifabrikk",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c24026400"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc34680900","_score":2.6283827,"_source":{
+  "name": "Oslo kommune",
+  "subdivision": "Byrådet",
+  "uri": "http://data.deichman.no/corporation/c34680900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc26487000","_score":2.6283827,"_source":{
+  "name": "Kristiania brødfabrik",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c26487000"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc26859100","_score":2.6283827,"_source":{
+  "name": "Jakobsens trykkfarvefabrikk",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c26859100"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc18393900","_score":2.6283827,"_source":{
+  "name": "Kampen skole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c18393900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc18117400","_score":2.6283827,"_source":{
+  "name": "Oslo",
+  "subdivision": "Ligningsvesenet",
+  "uri": "http://data.deichman.no/corporation/c18117400"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc29625900","_score":2.6283827,"_source":{
+  "name": "Oslo gjensidige glasforsikringsselskab",
+  "uri": "http://data.deichman.no/corporation/c29625900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc22908000","_score":2.6283827,"_source":{
+  "name": "Ladegården",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c22908000"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc10512900","_score":2.6283827,"_source":{
+  "name": "Rådhuset",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c10512900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc31521900","_score":2.6283827,"_source":{
+  "name": "Musikalske Lyceum",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c31521900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc28846100","_score":2.6283827,"_source":{
+  "name": "Ringerikslaget i Oslo",
+  "uri": "http://data.deichman.no/corporation/c28846100"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc12335900","_score":2.6283827,"_source":{
+  "name": "Prosjekt \"Oslo-patriot\"",
+  "uri": "http://data.deichman.no/corporation/c12335900"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc24088600","_score":2.6283827,"_source":{
+  "name": "Oslo kommune",
+  "subdivision": "Byggeetaten",
+  "uri": "http://data.deichman.no/corporation/c24088600"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc18866500","_score":2.6283827,"_source":{
+  "name": "Nordstrand skole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c18866500"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc21243000","_score":2.6283827,"_source":{
+  "name": "Striestuen",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c21243000"
+}},{"_index":"search","_type":"corporation","_id":"http%3A%2F%2Fdata.deichman.no%2Fcorporation%2Fc26451100","_score":2.6283827,"_source":{
+  "name": "Bergs pikeskole",
+  "specification": "Oslo",
+  "uri": "http://data.deichman.no/corporation/c26451100"
+}}]}}
