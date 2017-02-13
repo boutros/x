@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strconv"
@@ -14,13 +15,17 @@ import (
 
 var (
 	roles = map[string]string{
-		"http://data.deichman.no/role#author":      "forfatter",
-		"http://data.deichman.no/role#contributor": "bidragsyter",
-		"http://data.deichman.no/role#editor":      "redaktør",
-		"http://data.deichman.no/role#illustrator": "illustratør",
-		"http://data.deichman.no/role#performer":   "utøver",
-		"http://data.deichman.no/role#reader":      "innleser",
-		"http://data.deichman.no/role#translator":  "oversetter",
+		"http://data.deichman.no/role#actor":        "skuespiller",
+		"http://data.deichman.no/role#author":       "forfatter",
+		"http://data.deichman.no/role#contributor":  "bidragsyter",
+		"http://data.deichman.no/role#director":     "regissør",
+		"http://data.deichman.no/role#editor":       "redaktør",
+		"http://data.deichman.no/role#illustrator":  "illustratør",
+		"http://data.deichman.no/role#performer":    "utøver",
+		"http://data.deichman.no/role#producer":     "produsent",
+		"http://data.deichman.no/role#reader":       "innleser",
+		"http://data.deichman.no/role#translator":   "oversetter",
+		"http://data.deichman.no/role#scriptWriter": "manusforfatter",
 	}
 )
 
@@ -184,14 +189,24 @@ func workToHit(w work) searchHit {
 		abstract.WriteString(w.PublicationYear)
 		abstract.WriteString("\n")
 	}
+	sort.Slice(w.Contributors, func(i, j int) bool {
+		return w.Contributors[i].Role > w.Contributors[j].Role
+	})
+	var curRole string
 	for _, c := range w.Contributors {
 		if c.MainEntry {
 			title = c.Agent.Name
 			title += ": "
 			continue
 		}
-		abstract.WriteString(strings.Title(roles[c.Role]))
-		abstract.WriteString(": ")
+		if c.Role != curRole {
+			if curRole != "" {
+				abstract.WriteString("\n")
+			}
+			curRole = c.Role
+			abstract.WriteString(strings.Title(roles[c.Role]))
+			abstract.WriteString(": ")
+		}
 		abstract.WriteString(c.Agent.Name)
 		abstract.WriteString(". ")
 	}
@@ -273,16 +288,10 @@ func isbdTitle(mainTitle, subtitle, partTitle, partNumber string) string {
 	return s
 }
 
-func parseSearchResult(filename string) (searchResults, error) {
+func parseSearchResult(r io.Reader) (searchResults, error) {
 	var res searchResults
 
-	f, err := os.Open(filename)
-	if err != nil {
-		return res, err
-	}
-	defer f.Close()
-
-	dec := json.NewDecoder(f)
+	dec := json.NewDecoder(r)
 	var nextType string
 	for {
 		t, err := dec.Token()
@@ -343,7 +352,12 @@ func main() {
 
 	dummyDB := make(map[string]searchResults)
 	for _, filename := range []string{"bach", "oslo", "åsen", "hamsun"} {
-		res, err := parseSearchResult(filename + ".json")
+		f, err := os.Open(filename + ".json")
+		if err != nil {
+			log.Fatal(err)
+		}
+		res, err := parseSearchResult(f)
+		f.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -387,12 +401,33 @@ func main() {
 
 		if err := json.NewEncoder(w).Encode(res); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
 		}
 	})
 
 	http.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
-		panic("TODO") // proxy to elasticsearch
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Content-Type", "application/json")
+
+		q := r.URL.Query().Get("q")
+		if q == "" {
+			http.Error(w, `missing required parameter: "q"`, http.StatusBadRequest)
+			return
+		}
+		resp, err := http.Get("http://koha2.deichman.no:9200/search/_search?q=" + url.QueryEscape(q))
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+		res, err := parseSearchResult(resp.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if err := json.NewEncoder(w).Encode(res); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
 	})
 
 	log.Fatal(http.ListenAndServe(":8008", nil))
