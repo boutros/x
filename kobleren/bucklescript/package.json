@@ -1,0 +1,15 @@
+{
+    "name" : "kobleren",
+    "version" : "0.0.0",
+    "scripts" : {
+        "clean" : "bsb -clean-world",
+        "prebuild" : "npm run clean",
+        "build" : "bsb -make-world",
+        "pretest" : "npm run build",
+        "test" : "echo 'Create test harness'",
+        "prewatch" : "npm run clean",
+        "watch" : "bsb -w"
+    },
+    "dependencies" : { "bucklescript-tea" : "0.2.2" },
+    "peerDependencies" : { "bs-platform" : "^1.4.3" }
+}

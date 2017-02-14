@@ -1,0 +1,8 @@
+{
+    "name" : "kobleren",
+    "sources" :  "src",
+    "bs-dependencies": [
+      "bucklescript-tea"
+    ],
+    "package-specs": ["es6-global", "commonjs"]
+}
