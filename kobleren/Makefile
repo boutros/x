@@ -4,5 +4,5 @@ bucklescript_init:
 bucklescript_dev:
 	cd bucklescript && node_modules/.bin/bsb -clean-world -make-world -w
 
-bucklescript_build:
+bucklescript_bundle:
 	cd bucklescript && rollup -c

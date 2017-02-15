@@ -1,7 +1,7 @@
 module App exposing (..)
 
-import Html exposing (Html, text, div, p, input, h3, ul, li, pre)
-import Html.Attributes exposing (type_, value)
+import Html exposing (Html, text, div, p, input, h2, h3, ul, li, pre, nav, main_, strong, span)
+import Html.Attributes exposing (type_, value, attribute, class)
 import Html.Events exposing (onInput)
 import Http
 import Json.Decode exposing (Decoder, field, at, string, int, float, dict, list, nullable)
@@ -66,13 +66,35 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div []
-        [ p [] [ text "Search for something" ]
-        , input [ type_ "search", onInput Search ] []
-        , p []
-            [ text model.error ]
-        , div
+        [ nav []
+            [ h2 [] [ text "Vedlikehold av autoriteter" ]
+            , input
+                [ class "authority-search-box"
+                , attribute "size" "14"
+                , type_ "search"
+                , onInput Search
+                ]
+                []
+            ]
+        , main_
             []
-            [ viewSearchResults model.results ]
+            [ div [ class "search-results" ]
+                [ p
+                    []
+                    [ text model.error ]
+                , h3 []
+                    [ case model.results of
+                        Just res ->
+                            text (toString res.totalHits ++ " treff")
+
+                        Nothing ->
+                            text ""
+                    ]
+                , div
+                    []
+                    [ viewSearchResults model.results ]
+                ]
+            ]
         ]
 
 
@@ -80,7 +102,7 @@ viewSearchResults : Maybe SearchResults -> Html never
 viewSearchResults results =
     case results of
         Just searchResults ->
-            ul [] (List.map viewSearchHit searchResults.hits)
+            div [] (List.map viewSearchHit searchResults.hits)
 
         Nothing ->
             text ""
@@ -88,10 +110,16 @@ viewSearchResults results =
 
 viewSearchHit : SearchHit -> Html never
 viewSearchHit a =
-    li
-        []
-        [ h3 [] [ text (a.authorityType ++ ": " ++ a.label) ]
-        , pre [] [ text a.abstract ]
+    div
+        [ class "search-hit" ]
+        [ p []
+            [ span [ class "search-hit-authority-type" ]
+                [ text a.authorityType ]
+            , strong []
+                [ text a.label ]
+            , p [ class "search-hit-abstract" ]
+                [ text a.abstract ]
+            ]
         ]
 
 

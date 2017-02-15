@@ -149,28 +149,17 @@ func personToHit(p person) searchHit {
 	}
 	var b bytes.Buffer
 	sort.Slice(p.Work, func(i, j int) bool {
-		// sort by role
-		if p.Work[i].Role < p.Work[j].Role {
-			return true
-		}
-		if p.Work[i].Role > p.Work[j].Role {
-			return false
-		}
-		// then by publication year
 		return p.Work[i].PublicationYear > p.Work[j].PublicationYear
 	})
-	var curRole string
 	for _, work := range p.Work {
-		if work.Role != curRole {
-			curRole = work.Role
-			b.WriteString(work.Role)
-			b.WriteString(" av:\n")
-		}
 		if work.PublicationYear != "" {
 			b.WriteString(work.PublicationYear)
 			b.WriteString(": ")
 		}
 		b.WriteString(isbdTitle(work.MainTitle, work.Subtitle, work.PartTitle, work.PartNumber))
+		if work.Role != "Forfatter" {
+			b.WriteString(" (" + strings.ToLower(work.Role) + ")")
+		}
 		b.WriteString("\n")
 	}
 	return searchHit{
@@ -375,7 +364,7 @@ func main() {
 		}
 		res := dummyDB[q]
 		from := 0
-		size := 10
+		size := 100
 		if fromQ := r.URL.Query().Get("from"); fromQ != "" {
 			f, err := strconv.Atoi(fromQ)
 			if err != nil {

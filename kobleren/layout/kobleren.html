@@ -5,20 +5,27 @@
 		<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
 		<meta name="viewport" content="initial-scale=1.0">
 		<style>
+			/* general styles */
 			*        { box-sizing: border-box }
 			html     { font-family: Arial,sans-serif; line-height:1.15;
 				       -ms-text-size-adjust: 100%;-webkit-text-size-adjust: 100% }
 			body     { margin: 0; }
 		    a:visited { color: blue; }
+		    input, button, select { padding: .2em .62em; font-size: 100% }
+		    p { margin: 0.5em; }
+		    /* layout */
 		    ul   { list-style-type: none; padding: 0; margin: 0;}
 			nav      { position: fixed; top: 0; left: 0; background-color: #eee;
 		    	       text-align: right; border-right: 1px solid black; padding: 2em;
 		    	       height: 100vh; width: 15em }
-
+		    main      { margin-top: 4em; margin-left: 16em; width: 80%;}
 		    nav ul li { margin: 0.4em 0; }
 		    nav input { width: 10em; }
-		    input, button, select { padding: .2em .62em; font-size: 100% }
-
+		    /* semantic */
+		    .search-hit { border-bottom: 1px solid #000; padding: 0.1em; }
+		    .search-hit:hover { background-color: #eee }
+		    .search-hit-authority-type { display: inline-block; width: 8em; text-align: right; padding-right: 1em;}
+		    .search-hit-abstract { margin-left: 8em; white-space: pre-wrap; }
 		</style>
 	</head>
 	<body>
@@ -37,9 +44,28 @@
 				<li><a href="">Musikknoter</a></li>
 				<li><a href="">Spill</a></li>
 				<li><a href="">Språkkurs</a></li>
-			</li>
+			</ul>
 		</nav>
 		<main>
+			<div class="search-results">
+				<h3>X treff</h3>
+				<div class="search-hit">
+					<p><span class="search-hit-authority-type">Korporasjon</span><strong>Åsen historienemnd</strong></p>
+					<p class="search-hit-abstract"></p>
+				</div>
+				<div class="search-hit">
+					<p><span class="search-hit-authority-type">Person</span><strong>Åsen, Finn (1916-)</strong></p>
+					<p class="search-hit-abstract">1967: Moderne latin-amerikansk lyrikk i nordisk gjendiktning
+1955: Fløytespilleren (redaktør)</p>
+				</div>
+				<div class="search-hit">
+					<p><span class="search-hit-authority-type">Person</span><strong>Åsen, Jon (1892-1963)</strong></p>
+					<p class="search-hit-abstract">1967: Hægelands-boka. III. Kultursoga
+1967: Øvrebø-boka. III. Kultursoga
+1951: Øvrebø-boka. I. Gard og ætt
+1951: Hægelands-boka. I. Gard og ætt</p>
+				</div>
+			</div>
 		</main>
 	</body>
 </html>
