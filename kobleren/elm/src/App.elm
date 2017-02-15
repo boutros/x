@@ -1,7 +1,7 @@
 module App exposing (..)
 
-import Html exposing (Html, text, div, p, input, h2, h3, ul, li, pre, nav, main_, strong, span)
-import Html.Attributes exposing (type_, value, attribute, class)
+import Html exposing (Html, text, div, p, input, h2, h3, ul, li, pre, nav, main_, strong, span, label)
+import Html.Attributes exposing (type_, value, attribute, class, id, for)
 import Html.Events exposing (onInput)
 import Http
 import Json.Decode exposing (Decoder, field, at, string, int, float, dict, list, nullable)
@@ -108,6 +108,27 @@ viewSearchResults results =
             text ""
 
 
+viewSearchHitAbstract : String -> String -> Html never
+viewSearchHitAbstract abstract uri =
+    let
+        lines =
+            (String.split "\n" abstract)
+
+        length =
+            (List.length lines)
+    in
+        if length == 0 then
+            div [] []
+        else if length <= 5 then
+            div [] [ text abstract ]
+        else
+            div [ class "relative search-hit-abstract-more" ]
+                [ input [ id uri, type_ "checkbox" ] []
+                , label [ for uri ] []
+                , div [ class "search-hit-abstract-text" ] [ text abstract ]
+                ]
+
+
 viewSearchHit : SearchHit -> Html never
 viewSearchHit a =
     div
@@ -117,8 +138,8 @@ viewSearchHit a =
                 [ text a.authorityType ]
             , strong []
                 [ text a.label ]
-            , p [ class "search-hit-abstract" ]
-                [ text a.abstract ]
+            , div [ class "search-hit-abstract" ]
+                [ (viewSearchHitAbstract a.abstract a.id) ]
             ]
         ]
 
@@ -140,7 +161,7 @@ doSearch : String -> Cmd Msg
 doSearch query =
     let
         url =
-            "http://localhost:8008/dummysearch?q=" ++ query
+            "http://localhost:8008/search?q=" ++ query
     in
         Http.send GetResults (Http.get url decodeResults)
 

@@ -7,6 +7,9 @@ a:visited { color: blue; }
 input, button, select { padding: .2em .62em; font-size: 100% }
 p { margin: 0.5em 0; }
 
+/* generic classes */
+.relative { position:relative; }
+
 /* layout */
 ul   { list-style-type: none; padding: 0; margin: 0;}
 nav      { position: fixed; top: 0; left: 0; background-color: #eee;
@@ -20,4 +23,11 @@ nav input { width: 10em; }
 .search-hit { border-bottom: 1px solid #000; padding: 0.2em; }
 .search-hit:hover { background-color: #eee }
 .search-hit-authority-type { display: inline-block; width: 8em; text-align: right; padding-right: 1em;}
-.search-hit-abstract { margin-left: 8em; white-space: pre-wrap; }
+.search-hit-abstract { margin-left: 8em; white-space: pre-wrap; padding-top: 0.2em; }
+.search-hit-abstract-text { height: 4.5em; overflow: hidden; }
+.search-hit-abstract label { position: absolute; bottom: -1em; text-decoration: underline; color: blue; z-index: 100; cursor: pointer;}
+.search-hit-abstract input { display: none; }
+.search-hit-abstract label:after { content: "Vis mer..."; }
+.search-hit-abstract input:checked + label:after { content: "Vis mindre..."; }
+.search-hit-abstract input:checked ~ div { height: 100%; }
+.search-hit-abstract-more { margin-bottom: 1em; }
