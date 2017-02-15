@@ -27,6 +27,20 @@ var (
 		"http://data.deichman.no/role#translator":   "oversetter",
 		"http://data.deichman.no/role#scriptWriter": "manusforfatter",
 	}
+	authTypes = map[string]string{
+		"publication":     "utgivelse",
+		"work":            "verk",
+		"person":          "person",
+		"corporation":     "korporasjon",
+		"subject":         "emne",
+		"genre":           "sjanger",
+		"instrument":      "instrument",
+		"compositionType": "komposisjonstype",
+		"serial":          "forlagsserie",
+		"place":           "sted",
+		"workSeries":      "verksserie",
+		"event":           "hendelse",
+	}
 )
 
 type searchResults struct {
@@ -82,26 +96,22 @@ func (s *stringArray) UnmarshalJSON(data []byte) error {
 }
 
 type publication struct {
-	Subject              []string    `json:"subject"`
-	FirstPublicationYear string      `json:"firstPublicationYear"`
-	Isbn                 stringArray `json:"isbn"`
-	Bio                  string      `json:"bio"`
-	MainEntryName        string      `json:"mainEntryName"`
-	Language             stringArray `json:"language"`
-	Audiences            []string    `json:"audiences"`
-	Kd                   string      `json:"kd"`
-	FictionNonfiction    string      `json:"fictionNonfiction"`
-	WorkPartNumber       string      `json:"workPartNumber"`
-	Languages            []string    `json:"languages"`
-	Mt                   string      `json:"mt"`
-	URI                  string      `json:"uri"`
-	MainTitle            string      `json:"mainTitle"`
-	Subtitle             string      `json:"subtitle"`
-	PartTitle            string      `json:"partTitle"`
-	PublicationYear      string      `json:"publicationYear"`
-	Dewey                stringArray `json:"dewey"`
-	PartNumber           string      `json:"partNumber"`
-	Contributors         []struct {
+	Subject         []string    `json:"subject"`
+	Isbn            stringArray `json:"isbn"`
+	MainEntryName   string      `json:"mainEntryName"`
+	Language        stringArray `json:"language"`
+	Audiences       []string    `json:"audiences"`
+	Kd              string      `json:"kd"`
+	Languages       []string    `json:"languages"`
+	Mt              string      `json:"mt"`
+	URI             string      `json:"uri"`
+	MainTitle       string      `json:"mainTitle"`
+	Subtitle        string      `json:"subtitle"`
+	PartTitle       string      `json:"partTitle"`
+	PublicationYear string      `json:"publicationYear"`
+	Dewey           stringArray `json:"dewey"`
+	PartNumber      string      `json:"partNumber"`
+	Contributors    []struct {
 		Agent struct {
 			URI  string `json:"uri"`
 			Name string `json:"name"`
@@ -134,6 +144,46 @@ type corporation struct {
 	Specification string `json:"specification"`
 	Subdivision   string `json:"subdivision"`
 	URI           string `json:"uri"`
+}
+
+type subject struct {
+	PrefLabel     string `json:"prefLabel"`
+	Specification string `json:"specification"`
+	URI           string `json:"uri"`
+}
+
+type serial struct {
+	PartTitle       string `json:"partTitle"`
+	Subtitle        string `json:"subtitle"`
+	PartNumber      string `json:"partNumber"`
+	URI             string `json:"uri"`
+	SerialMainTitle string `json:"serialMainTitle"`
+	PublishedByName string `json:"publishedByName"`
+}
+
+type place struct {
+	AlternativeName string `json:"alternativeName"`
+	URI             string `json:"uri"`
+	PrefLabel       string `json:"prefLabel"`
+	Specification   string `json:"specification"`
+}
+
+type workSeries struct {
+	WorkSeriesMainTitle string `json:"workSeriesMainTitle"`
+	Subtitle            string `json:"subtitle"`
+	PartTitle           string `json:"partTitle"`
+	PartNumber          string `json:"partNumber"`
+	URI                 string `json:"uri"`
+}
+
+type event struct {
+	Date            string `json:"date"`
+	PlacePrefLabel  string `json:"placePrefLabel"`
+	AlternativeName string `json:"alternativeName"`
+	URI             string `json:"uri"`
+	PrefLabel       string `json:"prefLabel"`
+	Ordinal         string `json:"ordinal"`
+	Specification   string `json:"specification"`
 }
 
 func personToHit(p person) searchHit {
@@ -202,7 +252,7 @@ func workToHit(w work) searchHit {
 	title += isbdTitle(w.MainTitle, w.Subtitle, w.PartTitle, w.PartNumber)
 	return searchHit{
 		ID:       w.URI,
-		Type:     "work",
+		Type:     "verk",
 		Label:    title,
 		Abstract: abstract.String(),
 	}
@@ -239,7 +289,7 @@ func publicationToHit(p publication) searchHit {
 	}
 	return searchHit{
 		ID:       p.URI,
-		Type:     "publication",
+		Type:     "utgivelse",
 		Label:    title,
 		Abstract: abstract.String(),
 	}
@@ -256,10 +306,87 @@ func corporationToHit(c corporation) searchHit {
 	}
 	return searchHit{
 		ID:    c.URI,
-		Type:  "corporation",
+		Type:  "korporasjon",
 		Label: title,
 	}
 }
+
+func subjectToHit(s subject) searchHit {
+	title := s.PrefLabel
+	if s.Specification != "" {
+		title += " (" + s.Specification + ")"
+	}
+	return searchHit{
+		ID:    s.URI,
+		Type:  "emne",
+		Label: title,
+	}
+}
+
+func serialToHit(s serial) searchHit {
+	var abstract string
+	if s.PublishedByName != "" {
+		abstract = "Utgitt av: " + s.PublishedByName
+	}
+	return searchHit{
+		ID:       s.URI,
+		Type:     "forlagsserie",
+		Label:    isbdTitle(s.SerialMainTitle, s.Subtitle, s.PartTitle, s.PartNumber),
+		Abstract: abstract,
+	}
+}
+
+func workSeriesToHit(s workSeries) searchHit {
+	return searchHit{
+		ID:    s.URI,
+		Type:  "verksserie",
+		Label: isbdTitle(s.WorkSeriesMainTitle, s.Subtitle, s.PartTitle, s.PartNumber),
+	}
+}
+
+func placeToHit(p place) searchHit {
+	title := p.PrefLabel
+	if p.Specification != "" {
+		title += " (" + p.Specification + ")"
+	}
+	abstract := ""
+	if p.AlternativeName != "" {
+		abstract = "Også kjent som: " + p.AlternativeName
+	}
+	return searchHit{
+		ID:       p.URI,
+		Type:     "sted",
+		Label:    title,
+		Abstract: abstract,
+	}
+}
+
+func eventToHit(e event) searchHit {
+	title := e.PrefLabel
+	if e.Specification != "" {
+		title += " - " + e.Specification
+	}
+	if e.Ordinal != "" {
+		title += " (" + e.Ordinal + ")"
+	}
+	if e.PlacePrefLabel != "" {
+		title += ". " + e.PlacePrefLabel
+	}
+	if e.Date != "" {
+		title += ", " + e.Date
+	}
+	abstract := ""
+	if e.AlternativeName != "" {
+		abstract = "Også kjent som: " + e.AlternativeName
+	}
+	return searchHit{
+		ID:       e.URI,
+		Type:     "hendelse",
+		Label:    title,
+		Abstract: abstract,
+	}
+}
+
 func isbdTitle(mainTitle, subtitle, partTitle, partNumber string) string {
 	s := mainTitle
 	if subtitle != "" {
@@ -301,34 +428,84 @@ func parseSearchResult(r io.Reader) (searchResults, error) {
 				if err := dec.Decode(&res.TotalHits); err != nil {
 					return res, err
 				}
-			case "publication", "work", "person", "corporation":
+			case "publication", "work", "person", "corporation", "subject", "genre", "instrument", "compositionType", "serial", "place", "workSeries", "event":
 				nextType = s
 			case "_source":
 				switch nextType {
 				case "person":
 					var p person
 					if err := dec.Decode(&p); err != nil {
-						return res, err
+						log.Printf("error parsing %q: %v", nextType, err)
+						continue
+						//return res, err
 					}
 					res.Hits = append(res.Hits, personToHit(p))
 				case "publication":
 					var p publication
 					if err := dec.Decode(&p); err != nil {
-						return res, err
+						log.Printf("error parsing %q: %v", nextType, err)
+						continue
+						//return res, err
 					}
 					res.Hits = append(res.Hits, publicationToHit(p))
 				case "work":
 					var w work
 					if err := dec.Decode(&w); err != nil {
-						return res, err
+						log.Printf("error parsing %q: %v", nextType, err)
+						continue
+						//return res, err
 					}
 					res.Hits = append(res.Hits, workToHit(w))
 				case "corporation":
 					var c corporation
 					if err := dec.Decode(&c); err != nil {
-						return res, err
+						log.Printf("error parsing %q: %v", nextType, err)
+						continue
+						//return res, err
 					}
 					res.Hits = append(res.Hits, corporationToHit(c))
+				case "subject":
+					var s subject
+					if err := dec.Decode(&s); err != nil {
+						log.Printf("error parsing %q: %v", nextType, err)
+						continue
+						//return res, err
+					}
+					res.Hits = append(res.Hits, subjectToHit(s))
+				case "serial":
+					var s serial
+					if err := dec.Decode(&s); err != nil {
+						log.Printf("error parsing %q: %v", nextType, err)
+						continue
+						//return res, err
+					}
+					res.Hits = append(res.Hits, serialToHit(s))
+				case "place":
+					var p place
+					if err := dec.Decode(&p); err != nil {
+						log.Printf("error parsing %q: %v", nextType, err)
+						continue
+						//return res, err
+					}
+					res.Hits = append(res.Hits, placeToHit(p))
+				case "workSeries":
+					var s workSeries
+					if err := dec.Decode(&s); err != nil {
+						log.Printf("error parsing %q: %v", nextType, err)
+						continue
+						//return res, err
+					}
+					res.Hits = append(res.Hits, workSeriesToHit(s))
+				case "event":
+					var e event
+					if err := dec.Decode(&e); err != nil {
+						log.Printf("error parsing %q: %v", nextType, err)
+						continue
+						//return res, err
+					}
+					res.Hits = append(res.Hits, eventToHit(e))
+				default:
+					log.Printf("missing parser for authority type %q", nextType)
 				}
 			}
 		}
@@ -402,7 +579,7 @@ func main() {
 			http.Error(w, `missing required parameter: "q"`, http.StatusBadRequest)
 			return
 		}
-		resp, err := http.Get("http://koha2.deichman.no:9200/search/_search?q=" + url.QueryEscape(q))
+		resp, err := http.Get("http://172.19.0.2:9200/search/_search?q=" + url.QueryEscape(q))
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
