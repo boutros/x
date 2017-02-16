@@ -9,6 +9,7 @@ p { margin: 0.5em 0; }
 
 /* generic classes */
 .relative { position:relative; }
+.clearfix { clear: both; }
 
 /* layout */
 ul   { list-style-type: none; padding: 0; margin: 0;}
@@ -20,6 +21,8 @@ nav ul li { margin: 0.4em 0; }
 nav input { width: 10em; }
 
 /* semantic */
+.search-pagination li { display: inline-block; float: left; width: 2em; color: blue; padding: 0.2em; cursor: pointer; text-align: center; }
+.search-pagination li:hover { background: #eee; }
 .search-hit { border-bottom: 1px solid #000; padding: 0.2em; }
 .search-hit:hover { background-color: #eee }
 .search-hit-title { cursor: pointer; color: navy; }

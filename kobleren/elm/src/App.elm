@@ -14,12 +14,13 @@ import Json.Decode.Pipeline exposing (decode, required, requiredAt, optional)
 type alias Model =
     { error : String
     , results : Maybe SearchResults
+    , offset : Int
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { error = "", results = Nothing }, Cmd.none )
+    ( { error = "", results = Nothing, offset = 0 }, Cmd.none )
 
 
 type alias SearchResults =
@@ -53,14 +54,24 @@ update msg model =
             ( model, doSearch query )
 
         GetResults (Ok newResults) ->
-            ( Model "" (Just newResults), Cmd.none )
+            ( Model "" (Just newResults) 0, Cmd.none )
 
         GetResults (Err err) ->
-            ( Model (stringFromHttpError err) Nothing, Cmd.none )
+            ( Model (stringFromHttpError err) Nothing 0, Cmd.none )
 
 
 
 -- VIEW
+
+
+orZero : Maybe SearchResults -> Int
+orZero res =
+    case res of
+        Just res ->
+            res.totalHits
+
+        Nothing ->
+            0
 
 
 view : Model -> Html Msg
@@ -90,8 +101,9 @@ view model =
                         Nothing ->
                             text ""
                     ]
+                , (viewSearchPagination model.offset (orZero model.results))
                 , div
-                    []
+                    [ class "clearfix" ]
                     [ viewSearchResults model.results ]
                 ]
             ]
@@ -142,6 +154,35 @@ viewSearchHit a =
         , div [ class "search-hit-abstract" ]
             [ (viewSearchHitAbstract a.abstract a.id) ]
         ]
+
+
+viewSearchPagination : Int -> Int -> Html Msg
+viewSearchPagination offset total =
+    let
+        hitsPerPage =
+            10
+
+        numPages =
+            if total == 0 then
+                0
+            else
+                min (ceiling ((toFloat total) / hitsPerPage)) 10
+
+        activePage =
+            (offset * hitsPerPage)
+    in
+        if total <= hitsPerPage then
+            div [] []
+            -- TODO figure out how to do express this without this dummy else-branch
+        else
+            div
+                [ class "search-pagination" ]
+                [ ul []
+                    (List.map
+                        (\i -> li [] [ text (toString i) ])
+                        (List.range 1 (numPages))
+                    )
+                ]
 
 
 
