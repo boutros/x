@@ -136,11 +136,11 @@ viewSearchHit a =
         [ p []
             [ span [ class "search-hit-authority-type" ]
                 [ text a.authorityType ]
-            , strong []
+            , strong [ class "search-hit-title" ]
                 [ text a.label ]
-            , div [ class "search-hit-abstract" ]
-                [ (viewSearchHitAbstract a.abstract a.id) ]
             ]
+        , div [ class "search-hit-abstract" ]
+            [ (viewSearchHitAbstract a.abstract a.id) ]
         ]
 
 
