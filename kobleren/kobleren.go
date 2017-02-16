@@ -3,10 +3,10 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"sort"
 	"strconv"
@@ -42,6 +42,17 @@ var (
 		"event":           "hendelse",
 	}
 )
+
+const queryTemplate = `{
+  "query": {
+    "match": {
+      "_all": {
+            "query": "%s",
+            "operator": "and"
+      }
+    }
+  }
+}`
 
 type searchResults struct {
 	Took      int // ms
@@ -579,7 +590,13 @@ func main() {
 			http.Error(w, `missing required parameter: "q"`, http.StatusBadRequest)
 			return
 		}
-		resp, err := http.Get("http://172.19.0.2:9200/search/_search?q=" + url.QueryEscape(q))
+		var b bytes.Buffer
+		b.WriteString(fmt.Sprintf(queryTemplate, q))
+		resp, err := http.Post(
+			"http://172.19.0.2:9200/search/_search",
+			"application/json",
+			&b,
+		)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
