@@ -198,6 +198,20 @@ type event struct {
 	Specification   string `json:"specification"`
 }
 
+type compositionType struct {
+	AlternativeName string `json:"alternativeName"`
+	URI             string `json:"uri"`
+	PrefLabel       string `json:"prefLabel"`
+	Specification   string `json:"specification"`
+}
+
+type genre struct {
+	AlternativeName string `json:"alternativeName"`
+	URI             string `json:"uri"`
+	PrefLabel       string `json:"prefLabel"`
+	Specification   string `json:"specification"`
+}
+
 func personToHit(p person) searchHit {
 	label := p.Name
 	if p.BirthYear != "" {
@@ -373,6 +387,40 @@ func placeToHit(p place) searchHit {
 	}
 }
 
+func compositionTypeToHit(c compositionType) searchHit {
+	title := c.PrefLabel
+	if c.Specification != "" {
+		title += " (" + c.Specification + ")"
+	}
+	abstract := ""
+	if c.AlternativeName != "" {
+		abstract = "Også kjent som: " + c.AlternativeName
+	}
+	return searchHit{
+		ID:       c.URI,
+		Type:     "komposisjonstype",
+		Label:    title,
+		Abstract: abstract,
+	}
+}
+
+func genreToHit(g genre) searchHit {
+	title := g.PrefLabel
+	if g.Specification != "" {
+		title += " (" + g.Specification + ")"
+	}
+	abstract := ""
+	if g.AlternativeName != "" {
+		abstract = "Også kjent som: " + g.AlternativeName
+	}
+	return searchHit{
+		ID:       g.URI,
+		Type:     "sjanger",
+		Label:    title,
+		Abstract: abstract,
+	}
+}
+
 func eventToHit(e event) searchHit {
 	title := e.PrefLabel
 	if e.Specification != "" {
@@ -445,7 +493,6 @@ func parseSearchResult(r io.Reader) (searchResults, error) {
 					if err := dec.Decode(&p); err != nil {
 						log.Printf("error parsing %q: %v", nextType, err)
 						continue
-						//return res, err
 					}
 					res.Hits = append(res.Hits, personToHit(p))
 				case "publication":
@@ -453,7 +500,6 @@ func parseSearchResult(r io.Reader) (searchResults, error) {
 					if err := dec.Decode(&p); err != nil {
 						log.Printf("error parsing %q: %v", nextType, err)
 						continue
-						//return res, err
 					}
 					res.Hits = append(res.Hits, publicationToHit(p))
 				case "work":
@@ -461,7 +507,6 @@ func parseSearchResult(r io.Reader) (searchResults, error) {
 					if err := dec.Decode(&w); err != nil {
 						log.Printf("error parsing %q: %v", nextType, err)
 						continue
-						//return res, err
 					}
 					res.Hits = append(res.Hits, workToHit(w))
 				case "corporation":
@@ -469,7 +514,6 @@ func parseSearchResult(r io.Reader) (searchResults, error) {
 					if err := dec.Decode(&c); err != nil {
 						log.Printf("error parsing %q: %v", nextType, err)
 						continue
-						//return res, err
 					}
 					res.Hits = append(res.Hits, corporationToHit(c))
 				case "subject":
@@ -477,7 +521,6 @@ func parseSearchResult(r io.Reader) (searchResults, error) {
 					if err := dec.Decode(&s); err != nil {
 						log.Printf("error parsing %q: %v", nextType, err)
 						continue
-						//return res, err
 					}
 					res.Hits = append(res.Hits, subjectToHit(s))
 				case "serial":
@@ -485,7 +528,6 @@ func parseSearchResult(r io.Reader) (searchResults, error) {
 					if err := dec.Decode(&s); err != nil {
 						log.Printf("error parsing %q: %v", nextType, err)
 						continue
-						//return res, err
 					}
 					res.Hits = append(res.Hits, serialToHit(s))
 				case "place":
@@ -493,7 +535,6 @@ func parseSearchResult(r io.Reader) (searchResults, error) {
 					if err := dec.Decode(&p); err != nil {
 						log.Printf("error parsing %q: %v", nextType, err)
 						continue
-						//return res, err
 					}
 					res.Hits = append(res.Hits, placeToHit(p))
 				case "workSeries":
@@ -501,7 +542,6 @@ func parseSearchResult(r io.Reader) (searchResults, error) {
 					if err := dec.Decode(&s); err != nil {
 						log.Printf("error parsing %q: %v", nextType, err)
 						continue
-						//return res, err
 					}
 					res.Hits = append(res.Hits, workSeriesToHit(s))
 				case "event":
@@ -509,9 +549,22 @@ func parseSearchResult(r io.Reader) (searchResults, error) {
 					if err := dec.Decode(&e); err != nil {
 						log.Printf("error parsing %q: %v", nextType, err)
 						continue
-						//return res, err
 					}
 					res.Hits = append(res.Hits, eventToHit(e))
+				case "compositionType":
+					var c compositionType
+					if err := dec.Decode(&c); err != nil {
+						log.Printf("error parsing %q: %v", nextType, err)
+						continue
+					}
+					res.Hits = append(res.Hits, compositionTypeToHit(c))
+				case "genre":
+					var g genre
+					if err := dec.Decode(&g); err != nil {
+						log.Printf("error parsing %q: %v", nextType, err)
+						continue
+					}
+					res.Hits = append(res.Hits, genreToHit(g))
 				default:
 					log.Printf("missing parser for authority type %q", nextType)
 				}
