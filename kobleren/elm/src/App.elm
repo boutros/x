@@ -2,7 +2,7 @@ module App exposing (..)
 
 import Html exposing (Html, text, div, p, input, h2, h3, ul, li, pre, nav, main_, strong, span, label)
 import Html.Attributes exposing (type_, value, attribute, class, id, for)
-import Html.Events exposing (onInput)
+import Html.Events exposing (onInput, onClick)
 import Http
 import Json.Decode exposing (Decoder, field, at, string, int, float, dict, list, nullable)
 import Json.Decode.Pipeline exposing (decode, required, requiredAt, optional)
@@ -13,18 +13,18 @@ import Json.Decode.Pipeline exposing (decode, required, requiredAt, optional)
 
 type alias Model =
     { error : String
+    , query : String
     , results : Maybe SearchResults
-    , offset : Int
     }
 
 
 init : ( Model, Cmd Msg )
 init =
-    ( { error = "", results = Nothing, offset = 0 }, Cmd.none )
+    ( { error = "", query = "", results = Nothing }, Cmd.none )
 
 
 type alias SearchResults =
-    { took : Int
+    { offset : Int
     , totalHits : Int
     , hits : List SearchHit
     }
@@ -45,79 +45,72 @@ type alias SearchHit =
 type Msg
     = Search String
     | GetResults (Result Http.Error SearchResults)
+    | Paginate Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Search query ->
-            ( model, doSearch query )
+            ( { model | query = query }, doSearch query 0 )
 
         GetResults (Ok newResults) ->
-            ( Model "" (Just newResults) 0, Cmd.none )
+            ( Model "" model.query (Just newResults), Cmd.none )
 
         GetResults (Err err) ->
-            ( Model (stringFromHttpError err) Nothing 0, Cmd.none )
+            ( Model (stringFromHttpError err) "" Nothing, Cmd.none )
+
+        Paginate offset ->
+            ( model, doSearch model.query offset )
 
 
 
 -- VIEW
 
 
-orZero : Maybe SearchResults -> Int
-orZero res =
-    case res of
-        Just res ->
-            res.totalHits
-
-        Nothing ->
-            0
-
-
 view : Model -> Html Msg
 view model =
-    div []
-        [ nav []
-            [ h2 [] [ text "Vedlikehold av autoriteter" ]
-            , input
-                [ class "authority-search-box"
-                , attribute "size" "14"
-                , type_ "search"
-                , onInput Search
+    let
+        content =
+            case model.results of
+                Just searchResults ->
+                    viewSearchResults searchResults
+
+                Nothing ->
+                    div [] []
+    in
+        div []
+            [ nav []
+                [ h2 [] [ text "Vedlikehold av autoriteter" ]
+                , input
+                    [ class "authority-search-box"
+                    , attribute "size" "14"
+                    , type_ "search"
+                    , onInput Search
+                    ]
+                    []
                 ]
+            , main_
                 []
-            ]
-        , main_
-            []
-            [ div [ class "search-results" ]
                 [ p
                     []
                     [ text model.error ]
-                , h3 []
-                    [ case model.results of
-                        Just res ->
-                            text (toString res.totalHits ++ " treff")
-
-                        Nothing ->
-                            text ""
-                    ]
-                , (viewSearchPagination model.offset (orZero model.results))
-                , div
-                    [ class "clearfix" ]
-                    [ viewSearchResults model.results ]
+                , content
                 ]
             ]
-        ]
 
 
-viewSearchResults : Maybe SearchResults -> Html never
+viewSearchResults : SearchResults -> Html Msg
 viewSearchResults results =
-    case results of
-        Just searchResults ->
-            div [] (List.map viewSearchHit searchResults.hits)
-
-        Nothing ->
-            text ""
+    div [ class "search-results" ]
+        [ h3 []
+            [ text ((toString results.totalHits) ++ " treff") ]
+        , div
+            []
+            (List.map viewSearchHit results.hits)
+        , (viewSearchPagination results.offset results.totalHits)
+        , div [ class "clearfix" ] []
+        ]
 
 
 viewSearchHitAbstract : String -> String -> Html never
@@ -169,7 +162,7 @@ viewSearchPagination offset total =
                 min (ceiling ((toFloat total) / hitsPerPage)) 10
 
         activePage =
-            (offset * hitsPerPage)
+            (offset // hitsPerPage) + 1
     in
         if total <= hitsPerPage then
             div [] []
@@ -179,7 +172,23 @@ viewSearchPagination offset total =
                 [ class "search-pagination" ]
                 [ ul []
                     (List.map
-                        (\i -> li [] [ text (toString i) ])
+                        (\i ->
+                            if i == activePage then
+                                li [ class "search-pagination-active-page" ]
+                                    [ strong
+                                        []
+                                        [ text (toString i) ]
+                                    ]
+                            else
+                                li
+                                    [ class "search-pagination-page linkify"
+                                    , onClick
+                                        (Paginate ((i - 1) * hitsPerPage))
+                                    ]
+                                    [ text
+                                        (toString i)
+                                    ]
+                        )
                         (List.range 1 (numPages))
                     )
                 ]
@@ -198,11 +207,11 @@ subscriptions model =
 -- HTTP
 
 
-doSearch : String -> Cmd Msg
-doSearch query =
+doSearch : String -> Int -> Cmd Msg
+doSearch query offset =
     let
         url =
-            "http://localhost:8008/search?q=" ++ query
+            "http://localhost:8008/search?q=" ++ query ++ "&from=" ++ (toString offset)
     in
         Http.send GetResults (Http.get url decodeResults)
 
@@ -210,7 +219,7 @@ doSearch query =
 decodeResults : Json.Decode.Decoder SearchResults
 decodeResults =
     decode SearchResults
-        |> required "Took" int
+        |> required "Offset" int
         |> required "TotalHits" int
         |> optional "Hits" (list decodeSearchHit) []
 

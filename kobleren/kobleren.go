@@ -44,6 +44,7 @@ var (
 )
 
 const queryTemplate = `{
+  "from": %s,
   "query": {
     "match": {
       "_all": {
@@ -55,7 +56,7 @@ const queryTemplate = `{
 }`
 
 type searchResults struct {
-	Took      int // ms
+	Offset    int
 	TotalHits int
 	Hits      []searchHit
 }
@@ -431,10 +432,6 @@ func parseSearchResult(r io.Reader) (searchResults, error) {
 
 		if s, ok := t.(string); ok {
 			switch s {
-			case "took":
-				if err := dec.Decode(&res.Took); err != nil {
-					return res, err
-				}
 			case "total":
 				if err := dec.Decode(&res.TotalHits); err != nil {
 					return res, err
@@ -590,8 +587,12 @@ func main() {
 			http.Error(w, `missing required parameter: "q"`, http.StatusBadRequest)
 			return
 		}
+		from := "0"
+		if offset := r.URL.Query().Get("from"); offset != "" {
+			from = offset
+		}
 		var b bytes.Buffer
-		b.WriteString(fmt.Sprintf(queryTemplate, q))
+		b.WriteString(fmt.Sprintf(queryTemplate, from, q))
 		resp, err := http.Post(
 			"http://172.19.0.2:9200/search/_search",
 			"application/json",
@@ -606,6 +607,10 @@ func main() {
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
+		}
+		offset, err := strconv.Atoi(from)
+		if err == nil {
+			res.Offset = offset
 		}
 		if err := json.NewEncoder(w).Encode(res); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
