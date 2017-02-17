@@ -491,77 +491,77 @@ func parseSearchResult(r io.Reader) (searchResults, error) {
 				case "person":
 					var p person
 					if err := dec.Decode(&p); err != nil {
-						log.Printf("error parsing %q: %v", nextType, err)
+						log.Printf("error parsing %s: %v\nURI:%v", nextType, err, p.URI)
 						continue
 					}
 					res.Hits = append(res.Hits, personToHit(p))
 				case "publication":
 					var p publication
 					if err := dec.Decode(&p); err != nil {
-						log.Printf("error parsing %q: %v", nextType, err)
+						log.Printf("error parsing %s: %v\nURI:%v", nextType, err, p.URI)
 						continue
 					}
 					res.Hits = append(res.Hits, publicationToHit(p))
 				case "work":
 					var w work
 					if err := dec.Decode(&w); err != nil {
-						log.Printf("error parsing %q: %v", nextType, err)
+						log.Printf("error parsing %s: %v\nURI:%v", nextType, err, w.URI)
 						continue
 					}
 					res.Hits = append(res.Hits, workToHit(w))
 				case "corporation":
 					var c corporation
 					if err := dec.Decode(&c); err != nil {
-						log.Printf("error parsing %q: %v", nextType, err)
+						log.Printf("error parsing %s: %v\nURI:%v", nextType, err, c.URI)
 						continue
 					}
 					res.Hits = append(res.Hits, corporationToHit(c))
 				case "subject":
 					var s subject
 					if err := dec.Decode(&s); err != nil {
-						log.Printf("error parsing %q: %v", nextType, err)
+						log.Printf("error parsing %s: %v\nURI:%v", nextType, err, s.URI)
 						continue
 					}
 					res.Hits = append(res.Hits, subjectToHit(s))
 				case "serial":
 					var s serial
 					if err := dec.Decode(&s); err != nil {
-						log.Printf("error parsing %q: %v", nextType, err)
+						log.Printf("error parsing %s: %v\nURI:%v", nextType, err, s.URI)
 						continue
 					}
 					res.Hits = append(res.Hits, serialToHit(s))
 				case "place":
 					var p place
 					if err := dec.Decode(&p); err != nil {
-						log.Printf("error parsing %q: %v", nextType, err)
+						log.Printf("error parsing %s: %v\nURI:%v", nextType, err, p.URI)
 						continue
 					}
 					res.Hits = append(res.Hits, placeToHit(p))
 				case "workSeries":
 					var s workSeries
 					if err := dec.Decode(&s); err != nil {
-						log.Printf("error parsing %q: %v", nextType, err)
+						log.Printf("error parsing %s: %v\nURI:%v", nextType, err, s.URI)
 						continue
 					}
 					res.Hits = append(res.Hits, workSeriesToHit(s))
 				case "event":
 					var e event
 					if err := dec.Decode(&e); err != nil {
-						log.Printf("error parsing %q: %v", nextType, err)
+						log.Printf("error parsing %s: %v\nURI:%v", nextType, err, e.URI)
 						continue
 					}
 					res.Hits = append(res.Hits, eventToHit(e))
 				case "compositionType":
 					var c compositionType
 					if err := dec.Decode(&c); err != nil {
-						log.Printf("error parsing %q: %v", nextType, err)
+						log.Printf("error parsing %s: %v\nURI:%v", nextType, err, c.URI)
 						continue
 					}
 					res.Hits = append(res.Hits, compositionTypeToHit(c))
 				case "genre":
 					var g genre
 					if err := dec.Decode(&g); err != nil {
-						log.Printf("error parsing %q: %v", nextType, err)
+						log.Printf("error parsing %s: %v\nURI:%v", nextType, err, g.URI)
 						continue
 					}
 					res.Hits = append(res.Hits, genreToHit(g))
