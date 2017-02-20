@@ -1,71 +1,11 @@
-module App exposing (..)
+module G_View exposing (view)
 
+import A_Model exposing (Model)
+import B_Message exposing (..)
+import C_Data as Data
 import Html exposing (Html, text, div, a, p, input, h2, h3, ul, li, pre, nav, main_, strong, span, label)
 import Html.Attributes exposing (type_, value, attribute, class, id, for)
 import Html.Events exposing (onInput, onClick)
-import Http
-import Json.Decode exposing (Decoder, field, at, string, int, float, dict, list, nullable)
-import Json.Decode.Pipeline exposing (decode, required, requiredAt, optional)
-
-
--- MODEL
-
-
-type alias Model =
-    { error : String
-    , query : String
-    , results : Maybe SearchResults
-    }
-
-
-init : ( Model, Cmd Msg )
-init =
-    ( { error = "", query = "", results = Nothing }, Cmd.none )
-
-
-type alias SearchResults =
-    { offset : Int
-    , totalHits : Int
-    , hits : List SearchHit
-    }
-
-
-type alias SearchHit =
-    { id : String
-    , label : String
-    , authorityType : String
-    , abstract : String
-    }
-
-
-
--- UPDATE
-
-
-type Msg
-    = Search String
-    | GetResults (Result Http.Error SearchResults)
-    | Paginate Int
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Search query ->
-            ( { model | query = query }, doSearch query 0 )
-
-        GetResults (Ok newResults) ->
-            ( Model "" model.query (Just newResults), Cmd.none )
-
-        GetResults (Err err) ->
-            ( Model (stringFromHttpError err) "" Nothing, Cmd.none )
-
-        Paginate offset ->
-            ( model, doSearch model.query offset )
-
-
-
--- VIEW
 
 
 view : Model -> Html Msg
@@ -130,7 +70,7 @@ view model =
             ]
 
 
-viewSearchResults : SearchResults -> Html Msg
+viewSearchResults : Data.SearchResults -> Html Msg
 viewSearchResults results =
     div [ class "search-results" ]
         [ h3 []
@@ -164,7 +104,7 @@ viewSearchHitAbstract abstract uri =
                 ]
 
 
-viewSearchHit : SearchHit -> Html never
+viewSearchHit : Data.SearchHit -> Html never
 viewSearchHit a =
     div
         [ class "search-hit" ]
@@ -222,61 +162,3 @@ viewSearchPagination offset total =
                         (List.range 1 (numPages))
                     )
                 ]
-
-
-
--- SUBSCRIPTIONS
-
-
-subscriptions : Model -> Sub Msg
-subscriptions model =
-    Sub.none
-
-
-
--- HTTP
-
-
-doSearch : String -> Int -> Cmd Msg
-doSearch query offset =
-    let
-        url =
-            "http://localhost:8008/search?q=" ++ query ++ "&from=" ++ (toString offset)
-    in
-        Http.send GetResults (Http.get url decodeResults)
-
-
-decodeResults : Json.Decode.Decoder SearchResults
-decodeResults =
-    decode SearchResults
-        |> required "Offset" int
-        |> required "TotalHits" int
-        |> optional "Hits" (list decodeSearchHit) []
-
-
-decodeSearchHit : Json.Decode.Decoder SearchHit
-decodeSearchHit =
-    decode SearchHit
-        |> required "ID" string
-        |> required "Label" string
-        |> required "Type" string
-        |> required "Abstract" string
-
-
-stringFromHttpError : Http.Error -> String
-stringFromHttpError e =
-    case e of
-        Http.BadUrl msg ->
-            "Bad URL" ++ msg
-
-        Http.Timeout ->
-            "Timeout"
-
-        Http.NetworkError ->
-            "Network Error"
-
-        Http.BadPayload msg response ->
-            "Bad Payload: " ++ msg
-
-        Http.BadStatus response ->
-            "Bad Reponse: " ++ response.status.message ++ " : " ++ response.body
