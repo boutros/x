@@ -1,6 +1,6 @@
 module App exposing (..)
 
-import Html exposing (Html, text, div, p, input, h2, h3, ul, li, pre, nav, main_, strong, span, label)
+import Html exposing (Html, text, div, a, p, input, h2, h3, ul, li, pre, nav, main_, strong, span, label)
 import Html.Attributes exposing (type_, value, attribute, class, id, for)
 import Html.Events exposing (onInput, onClick)
 import Http
@@ -89,6 +89,36 @@ view model =
                     , onInput Search
                     ]
                     []
+                , h2 [] [ text "Nytt materiale" ]
+                , ul [ class "linkify" ]
+                    [ li []
+                        [ a [] [ text "Bok" ]
+                        ]
+                    , li []
+                        [ a [] [ text "E-bok" ]
+                        ]
+                    , li []
+                        [ a [] [ text "Lydbok" ]
+                        ]
+                    , li []
+                        [ a [] [ text "Tegneserie" ]
+                        ]
+                    , li []
+                        [ a [] [ text "Film" ]
+                        ]
+                    , li []
+                        [ a [] [ text "Musikkopptak" ]
+                        ]
+                    , li []
+                        [ a [] [ text "Musikknoter" ]
+                        ]
+                    , li []
+                        [ a [] [ text "Spill" ]
+                        ]
+                    , li []
+                        [ a [] [ text "Språkkurs" ]
+                        ]
+                    ]
                 ]
             , main_
                 []
@@ -105,10 +135,10 @@ viewSearchResults results =
     div [ class "search-results" ]
         [ h3 []
             [ text ((toString results.totalHits) ++ " treff") ]
-        , div
-            []
-            (List.map viewSearchHit results.hits)
         , (viewSearchPagination results.offset results.totalHits)
+        , div
+            [ class "clearfix" ]
+            (List.map viewSearchHit results.hits)
         , div [ class "clearfix" ] []
         ]
 
