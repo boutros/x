@@ -10,7 +10,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Search query ->
-            ( { model | query = query }, Command.doSearch query 0 )
+            if (String.trim query) == "" then
+                ( Model "" "" Nothing, Cmd.none )
+            else
+                ( { model | query = query }, Command.doSearch query 0 )
 
         GetResults (Ok newResults) ->
             ( Model "" model.query (Just newResults), Cmd.none )
