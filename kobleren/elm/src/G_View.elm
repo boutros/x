@@ -3,9 +3,27 @@ module G_View exposing (view)
 import A_Model exposing (Model)
 import B_Message exposing (..)
 import C_Data as Data
-import Html exposing (Html, text, div, a, p, input, h2, h3, ul, li, pre, nav, main_, strong, span, label)
+import Html exposing (Html, Attribute, text, div, a, p, input, h2, h3, ul, li, pre, nav, main_, strong, span, label)
 import Html.Attributes exposing (type_, value, attribute, class, id, for)
-import Html.Events exposing (onInput, onClick)
+import Html.Events exposing (onInput, onClick, onWithOptions, defaultOptions)
+import Json.Decode as Json
+
+
+-- link helper
+
+
+link : String -> List (Attribute Msg) -> List (Html Msg) -> Html Msg
+link route attributes children =
+    let
+        clickHandler =
+            onWithOptions "click" defaultOptions <| Json.succeed <| NavigateTo route
+
+        attrs =
+            clickHandler :: attributes
+    in
+        a
+            attrs
+            children
 
 
 view : Model -> Html Msg
@@ -104,14 +122,16 @@ viewSearchHitAbstract abstract uri =
                 ]
 
 
-viewSearchHit : Data.SearchHit -> Html never
+viewSearchHit : Data.SearchHit -> Html Msg
 viewSearchHit a =
     div
         [ class "search-hit" ]
         [ p []
             [ span [ class "search-hit-authority-type" ]
                 [ text a.authorityType ]
-            , strong [ class "search-hit-title" ]
+            , link ("/edit?uri=" ++ a.id)
+                [ class "search-hit-title"
+                ]
                 [ text a.label ]
             ]
         , div [ class "search-hit-abstract" ]
