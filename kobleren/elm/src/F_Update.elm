@@ -1,11 +1,11 @@
-module F_Update exposing (update)
+module F_Update exposing (update, parseLocation)
 
 import A_Model exposing (Model)
 import B_Message exposing (..)
 import D_Command as Command
 import Http
 import Navigation
-import UrlParser exposing (..)
+import Vendor.UrlParser exposing (..)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -41,7 +41,7 @@ matchers : Parser (Route -> a) a
 matchers =
     oneOf
         [ map HomeRoute top
-        , map EditAuthorityRoute (s "edit" <?> stringParam "uri" <?> stringParam "type")
+        , map EditAuthorityRoute (s "edit" <?> requiredStringParam "uri" <?> requiredStringParam "type")
         ]
 
 
