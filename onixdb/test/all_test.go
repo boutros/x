@@ -219,7 +219,7 @@ func TestAll(t *testing.T) {
 
 	// Verify that there are no indexes in an empty db
 	if len(db.Indexes()) != 0 {
-		t.Fatal("indexes not empty: %v", db.Indexes())
+		t.Fatalf("indexes not empty: %v", db.Indexes())
 	}
 	// Verify that records can be stored and given an ID.
 	ids := make([]uint32, len(products.Product))

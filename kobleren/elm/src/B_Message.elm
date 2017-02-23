@@ -15,6 +15,5 @@ type Msg
 
 type Route
     = HomeRoute
-    | EditAuthorityRoute String
-    | WorkflowRoute
+    | EditAuthorityRoute String String
     | NotFoundRoute

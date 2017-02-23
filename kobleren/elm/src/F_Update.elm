@@ -5,6 +5,7 @@ import B_Message exposing (..)
 import D_Command as Command
 import Http
 import Navigation
+import UrlParser exposing (..)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -30,10 +31,28 @@ update msg model =
 
         LocationChange location ->
             let
-                _ =
-                    Debug.log "LocatinChange" location
+                newRoute =
+                    parseLocation location
             in
-                ( model, Cmd.none )
+                ( { model | route = newRoute }, Cmd.none )
+
+
+matchers : Parser (Route -> a) a
+matchers =
+    oneOf
+        [ map HomeRoute top
+        , map EditAuthorityRoute (s "edit" <?> stringParam "uri" <?> stringParam "type")
+        ]
+
+
+parseLocation : Navigation.Location -> Route
+parseLocation location =
+    case (parsePath matchers location) of
+        Just route ->
+            route
+
+        Nothing ->
+            NotFoundRoute
 
 
 
