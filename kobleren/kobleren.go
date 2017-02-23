@@ -46,11 +46,9 @@ var (
 const queryTemplate = `{
   "from": %s,
   "query": {
-    "match": {
-      "_all": {
-            "query": "%s",
-            "operator": "and"
-      }
+    "query_string": {
+        "query": "%s",
+        "default_operator": "and"
     }
   }
 }`
