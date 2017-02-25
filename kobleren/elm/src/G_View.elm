@@ -20,7 +20,7 @@ page model =
             Home.view model
 
         EditAuthorityRoute uri type_ ->
-            Person.view model
+            Person.view model uri
 
         NotFoundRoute ->
             notFoundView model

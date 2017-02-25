@@ -22,7 +22,12 @@ type alias SearchHit =
     }
 
 
+type InputType
+    = InputString
 
+
+
+--| InputNumber Int
 -- DECODERS
 
 
