@@ -29,5 +29,7 @@ all =
         describe "RDF module"
             [ test "Parsing N-Triples" <|
                 \_ ->
-                    Expect.equalLists [ 1, 2, 3, 4 ] [ 1, 2, 3, 4.1 ]
+                    Expect.equalLists (mustParse "<a> <b> <c> .")
+                        [ TriplePattern (TermURI "a") (TermURI "b") (TermURI "c")
+                        ]
             ]

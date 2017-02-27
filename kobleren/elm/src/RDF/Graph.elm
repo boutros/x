@@ -1,4 +1,4 @@
-module RDF.Graph exposing (..)
+module RDF.Graph exposing (fromString)
 
 import RDF.RDF exposing (..)
 import Parser exposing (..)
@@ -12,13 +12,13 @@ import Parser exposing (..)
 
 parseTriple : Parser TriplePattern
 parseTriple =
-    succed identity
+    succeed TriplePattern
         |. whitespace
         |= parseSubject
         |. whitespace
         |= parseURI
         |. whitespace
-        |. parseObject
+        |= parseObject
         |. whitespace
         |. symbol "."
 
@@ -27,7 +27,7 @@ parseObject : Parser Term
 parseObject =
     oneOf
         [ parseURI
-        , parseLiteral
+          -- , parseLiteral
         , parseBlankNode
         ]
 
@@ -42,14 +42,14 @@ parseSubject =
 
 parseBlankNode : Parser Term
 parseBlankNode =
-    succed (TermBlankNode identity)
+    succeed TermBlankNode
         |. keyword "_:"
-        |= string
+        |= blankNodeString
 
 
 parseURI : Parser Term
 parseURI =
-    succed (TermURI identity)
+    succeed TermURI
         |. symbol "<"
         |= uriString
         |. symbol ">"
@@ -57,6 +57,12 @@ parseURI =
 
 
 --illegal URI characters: /[\x00-\x20<>\\"\{\}\|\^\`]/
+
+
+blankNodeString : Parser String
+blankNodeString =
+    mapWithSource always <|
+        ignoreWhile (\char -> char /= ' ')
 
 
 uriString : Parser String
@@ -70,6 +76,12 @@ whitespace =
     ignoreWhile (\char -> (char == ' ' || char == '\t'))
 
 
-fromString : String -> Result (List TriplePattern)
+parseTriples : String -> Parser (List TriplePattern)
+parseTriples ntriples =
+    succeed identity
+        |= zeroOrMore parseTriple
+
+
+fromString : String -> Result Error (List TriplePattern)
 fromString ntriples =
-    []
+    run (parseTriples ntriples) ntriples
