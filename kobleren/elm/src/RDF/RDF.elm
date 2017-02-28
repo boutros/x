@@ -66,7 +66,7 @@ module RDF.RDF exposing (..)
 type alias Literal =
     { value : String
     , language : Maybe String
-    , datatype : String
+    , datatype : Term
     }
 
 
@@ -82,3 +82,11 @@ type alias TriplePattern =
     , predicate : Term
     , object : Term
     }
+
+
+xsdString =
+    TermURI "http://www.w3.org/2001/XMLSchema#string"
+
+
+rdfLangString =
+    TermURI "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"

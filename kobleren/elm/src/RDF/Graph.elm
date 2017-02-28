@@ -7,7 +7,6 @@ import Parser exposing (..)
 --https://gist.github.com/jinjor/f6dd8c75d9a3e84a1b39afb4e3bee322#file-parsertrouble-elm-L119-L132
 --https://groups.google.com/forum/#!topic/elm-dev/gJ-FzttCcjA
 --parseGraph : Parser (List TriplePattern)
---parseLiteral : Parser Term
 
 
 parseTriple : Parser TriplePattern
@@ -28,7 +27,7 @@ parseObject =
     inContext "object" <|
         oneOf
             [ parseURI
-              -- , parseLiteral
+            , parseLiteral
             , parseBlankNode
             ]
 
@@ -69,6 +68,27 @@ parseURI =
 --illegal URI characters: /[\x00-\x20<>\\"\{\}\|\^\`]/
 
 
+parseLiteral : Parser Term
+parseLiteral =
+    inContext "Literal" <|
+        succeed TermLiteral
+            |= parseLit
+
+
+
+-- TODO howto avoid this extra function parseLit, should be included in above parseLiteral
+
+
+parseLit : Parser Literal
+parseLit =
+    succeed Literal
+        |. symbol "\""
+        |= literalString
+        |= succeed Nothing
+        |= succeed xsdString
+        |. symbol "\""
+
+
 blankNodeString : Parser String
 blankNodeString =
     mapWithSource always <|
@@ -79,6 +99,12 @@ uriString : Parser String
 uriString =
     mapWithSource always <|
         ignoreWhile (\char -> char /= '>')
+
+
+literalString : Parser String
+literalString =
+    mapWithSource always <|
+        ignoreWhile (\char -> char /= '"' && char /= '\n')
 
 
 whitespace : Parser ()

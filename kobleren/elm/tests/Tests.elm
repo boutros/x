@@ -40,9 +40,6 @@ formatError err =
 
                 Just topContext ->
                     topContext.description
-
-        problem =
-            "Problem!"
     in
         position
             ++ ": parsing "
@@ -56,11 +53,34 @@ all : Test
 all =
     describe "Parsing N-Triples"
         [ describe "Well-formed"
-            [ test "All terms are URIs" <|
+            [ test "All terms as URIs" <|
                 \_ ->
                     Expect.equalLists (mustOk "<a> <b> <c> .")
                         [ TriplePattern (TermURI "a") (TermURI "b") (TermURI "c")
                         ]
+            , test "Blank node as subject" <|
+                \_ ->
+                    Expect.equalLists (mustOk "_:xyz1 <b> <c> .")
+                        [ TriplePattern (TermBlankNode "xyz1") (TermURI "b") (TermURI "c")
+                        ]
+            , test "Blank node as object" <|
+                \_ ->
+                    Expect.equalLists (mustOk "<a> <b> _:xyz1 .")
+                        [ TriplePattern (TermURI "a") (TermURI "b") (TermBlankNode "xyz1")
+                        ]
+            , test "String literal" <|
+                \_ ->
+                    Expect.equalLists (mustOk "<a> <b> \"xyz\" .")
+                        [ TriplePattern (TermURI "a") (TermURI "b") (TermLiteral <| Literal "xyz" Nothing xsdString)
+                        ]
+              --, test "Language-tagged literal" <|
+              --    \_ ->
+              --       Expect.equalLists (mustOk "<a> <b> \"hei\"@no .")
+              --            [ TriplePattern
+              --                (TermURI "a")
+              --                (TermURI "b")
+              --                (TermLiteral <| Literal "hei" (Just "no") rdfLangString)
+              --            ]
             ]
         , describe "Malformed"
             [ test "Missing object" <|
