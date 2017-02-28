@@ -16,7 +16,7 @@ parseTriple =
         |. whitespace
         |= parseSubject
         |. whitespace
-        |= parseURI
+        |= parsePredicate
         |. whitespace
         |= parseObject
         |. whitespace
@@ -25,34 +25,44 @@ parseTriple =
 
 parseObject : Parser Term
 parseObject =
-    oneOf
-        [ parseURI
-          -- , parseLiteral
-        , parseBlankNode
-        ]
+    inContext "object" <|
+        oneOf
+            [ parseURI
+              -- , parseLiteral
+            , parseBlankNode
+            ]
 
 
 parseSubject : Parser Term
 parseSubject =
-    oneOf
-        [ parseURI
-        , parseBlankNode
-        ]
+    inContext "subject" <|
+        oneOf
+            [ parseURI
+            , parseBlankNode
+            ]
+
+
+parsePredicate : Parser Term
+parsePredicate =
+    inContext "predicate" <|
+        parseURI
 
 
 parseBlankNode : Parser Term
 parseBlankNode =
-    succeed TermBlankNode
-        |. keyword "_:"
-        |= blankNodeString
+    inContext "blank node" <|
+        succeed TermBlankNode
+            |. keyword "_:"
+            |= blankNodeString
 
 
 parseURI : Parser Term
 parseURI =
-    succeed TermURI
-        |. symbol "<"
-        |= uriString
-        |. symbol ">"
+    inContext "URI" <|
+        succeed TermURI
+            |. symbol "<"
+            |= uriString
+            |. symbol ">"
 
 
 
