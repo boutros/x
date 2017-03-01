@@ -10,8 +10,12 @@ import Parser
 mustOk : String -> List TriplePattern
 mustOk ntriples =
     case Graph.fromString ntriples of
-        Err _ ->
-            []
+        Err err ->
+            let
+                _ =
+                    Debug.crash (toString err)
+            in
+                []
 
         Ok triples ->
             triples
@@ -71,16 +75,27 @@ all =
             , test "String literal" <|
                 \_ ->
                     Expect.equalLists (mustOk "<a> <b> \"xyz\" .")
-                        [ TriplePattern (TermURI "a") (TermURI "b") (TermLiteral <| Literal "xyz" Nothing xsdString)
+                        [ TriplePattern
+                            (TermURI "a")
+                            (TermURI "b")
+                            (TermLiteral <| Literal "xyz" Nothing xsdString)
                         ]
-              --, test "Language-tagged literal" <|
-              --    \_ ->
-              --       Expect.equalLists (mustOk "<a> <b> \"hei\"@no .")
-              --            [ TriplePattern
-              --                (TermURI "a")
-              --                (TermURI "b")
-              --                (TermLiteral <| Literal "hei" (Just "no") rdfLangString)
-              --            ]
+            , test "Language-tagged literal" <|
+                \_ ->
+                    Expect.equalLists (mustOk "<a> <b> \"hei\"@no .")
+                        [ TriplePattern
+                            (TermURI "a")
+                            (TermURI "b")
+                            (TermLiteral <| Literal "hei" (Just "no") rdfLangString)
+                        ]
+            , test "Typed literal" <|
+                \_ ->
+                    Expect.equalLists (mustOk "<a> <b> \"99\"^^<http://www.w3.org/2001/XMLSchema#integer> .")
+                        [ TriplePattern
+                            (TermURI "a")
+                            (TermURI "b")
+                            (TermLiteral <| Literal "99" Nothing xsdInteger)
+                        ]
             ]
         , describe "Malformed"
             [ test "Missing object" <|

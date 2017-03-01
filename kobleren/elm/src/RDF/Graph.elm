@@ -64,29 +64,70 @@ parseURI =
             |. symbol ">"
 
 
-
---illegal URI characters: /[\x00-\x20<>\\"\{\}\|\^\`]/
-
-
 parseLiteral : Parser Term
 parseLiteral =
     inContext "Literal" <|
         succeed TermLiteral
-            |= parseLit
+            |= oneOf
+                [ try parseLangLiteral
+                , try parseTypedLiteral
+                , parseStringLiteral
+                ]
 
 
+try : Parser a -> Parser a
+try parser =
+    delayedCommitMap always parser (succeed ())
 
--- TODO howto avoid this extra function parseLit, should be included in above parseLiteral
 
-
-parseLit : Parser Literal
-parseLit =
+parseStringLiteral : Parser Literal
+parseStringLiteral =
     succeed Literal
         |. symbol "\""
         |= literalString
+        |. symbol "\""
         |= succeed Nothing
         |= succeed xsdString
+
+
+parseLangLiteral : Parser Literal
+parseLangLiteral =
+    succeed Literal
         |. symbol "\""
+        |= literalString
+        |. symbol "\""
+        |. symbol "@"
+        |= parseLangTag
+        |= succeed rdfLangString
+
+
+parseTypedLiteral : Parser Literal
+parseTypedLiteral =
+    succeed Literal
+        |. symbol "\""
+        |= literalString
+        |. symbol "\""
+        |. symbol "^^"
+        |= succeed Nothing
+        |= parseURI
+
+
+
+-- TODO make parseAnyLiteral work
+
+
+parseAnyLiteral : Parser Literal
+parseAnyLiteral =
+    succeed Literal
+        |. symbol "\""
+        |= literalString
+        |. symbol "\""
+        |= oneOf
+            [ delayedCommit (symbol "@") <|
+                parseLangTag
+            , succeed Nothing
+            ]
+        |= succeed xsdString
 
 
 blankNodeString : Parser String
@@ -98,6 +139,7 @@ blankNodeString =
 uriString : Parser String
 uriString =
     mapWithSource always <|
+        --illegal URI characters: /[\x00-\x20<>\\"\{\}\|\^\`]/
         ignoreWhile (\char -> char /= '>')
 
 
@@ -107,9 +149,21 @@ literalString =
         ignoreWhile (\char -> char /= '"' && char /= '\n')
 
 
+parseLangTag : Parser (Maybe String)
+parseLangTag =
+    succeed Just
+        |= langString
+
+
+langString : Parser String
+langString =
+    mapWithSource always <|
+        ignoreWhile (\char -> char /= ' ' && char /= '.')
+
+
 whitespace : Parser ()
 whitespace =
-    ignoreWhile (\char -> (char == ' ' || char == '\t'))
+    ignoreWhile (\char -> char == ' ' || char == '\t')
 
 
 parseTriples : String -> Parser (List TriplePattern)

@@ -88,5 +88,9 @@ xsdString =
     TermURI "http://www.w3.org/2001/XMLSchema#string"
 
 
+xsdInteger =
+    TermURI "http://www.w3.org/2001/XMLSchema#integer"
+
+
 rdfLangString =
     TermURI "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"
