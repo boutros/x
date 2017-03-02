@@ -96,6 +96,22 @@ all =
                             (TermURI "b")
                             (TermLiteral <| Literal "99" Nothing xsdInteger)
                         ]
+            , test "Multiple statements" <|
+                \_ ->
+                    Expect.equalLists
+                        (mustOk
+                            """
+                        <w1> <contributor> _:b1 .
+                        _:b1 <role> <author> .
+                        _:b1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <Contribution> .
+                        _:b1 <agent> <h1> .
+                            """
+                        )
+                        [ TriplePattern (TermURI "w1") (TermURI "contributor") (TermBlankNode "b1")
+                        , TriplePattern (TermBlankNode "b1") (TermURI "role") (TermURI "author")
+                        , TriplePattern (TermBlankNode "b1") rdfType (TermURI "Contribution")
+                        , TriplePattern (TermBlankNode "b1") (TermURI "agent") (TermURI "h1")
+                        ]
             ]
         , describe "Malformed"
             [ test "Missing object" <|

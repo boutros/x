@@ -7,7 +7,7 @@ import Parser exposing (..)
 parseTriple : Parser TriplePattern
 parseTriple =
     succeed TriplePattern
-        |. whitespace
+        |. whitespaceIncNewline
         |= parseSubject
         |. whitespace
         |= parsePredicate
@@ -15,6 +15,11 @@ parseTriple =
         |= parseObject
         |. whitespace
         |. symbol "."
+        |. whitespace
+        |. oneOf
+            [ whitespaceIncNewline
+            , end
+            ]
 
 
 parseObject : Parser Term
@@ -159,6 +164,11 @@ langString =
 whitespace : Parser ()
 whitespace =
     ignoreWhile (\char -> char == ' ' || char == '\t')
+
+
+whitespaceIncNewline : Parser ()
+whitespaceIncNewline =
+    ignoreWhile (\char -> char == ' ' || char == '\t' || char == '\n')
 
 
 parseTriples : String -> Parser (List TriplePattern)

@@ -94,3 +94,7 @@ xsdInteger =
 
 rdfLangString =
     TermURI "http://www.w3.org/1999/02/22-rdf-syntax-ns#langString"
+
+
+rdfType =
+    TermURI "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
