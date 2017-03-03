@@ -2,6 +2,7 @@ module C_Data exposing (..)
 
 import Json.Decode exposing (Decoder, field, at, string, int, float, dict, list, nullable)
 import Json.Decode.Pipeline exposing (decode, required, requiredAt, optional)
+import RDF.Graph as Graph
 
 
 -- TYPES
@@ -46,3 +47,7 @@ decodeSearchHit =
         |> required "Label" string
         |> required "Type" string
         |> required "Abstract" string
+
+
+decodeResource resource =
+    Graph.fromString resource

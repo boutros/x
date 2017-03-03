@@ -25,32 +25,10 @@ mustFail : String -> String
 mustFail ntriples =
     case Graph.fromString ntriples of
         Err err ->
-            formatError err
+            err
 
         Ok triples ->
             ""
-
-
-formatError : Parser.Error -> String
-formatError err =
-    let
-        position =
-            (toString err.row) ++ ":" ++ (toString err.col)
-
-        context =
-            case List.head err.context of
-                Nothing ->
-                    ""
-
-                Just topContext ->
-                    topContext.description
-    in
-        position
-            ++ ": parsing "
-            ++ context
-            ++ ": unexpected character: \""
-            ++ (String.slice (err.col - 1) (err.col + 1) err.source)
-            ++ "\""
 
 
 all : Test

@@ -1,6 +1,7 @@
 module B_Message exposing (..)
 
 import C_Data as Data
+import RDF.RDF as RDF
 import Http
 import Navigation exposing (Location)
 
@@ -11,6 +12,8 @@ type Msg
     | Paginate Int
     | LocationChange Location
     | NavigateTo String
+    | LoadResource String
+    | GetResource (Result Http.Error String)
 
 
 type Route

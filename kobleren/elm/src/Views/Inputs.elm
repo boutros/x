@@ -3,7 +3,6 @@ module Views.Inputs exposing (..)
 import Html exposing (Html, div, text, input, label, textarea, datalist, option)
 import Html.Attributes exposing (class, value, type_, maxlength, style, rows, list, id)
 import B_Message exposing (..)
-import C_Data exposing (..)
 import RDF.RDF as RDF
 
 

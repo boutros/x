@@ -8,4 +8,4 @@ import Navigation exposing (Location)
 
 init : Location -> ( Model, Cmd Msg )
 init location =
-    ( { route = (parseLocation location), error = "", query = "", results = Nothing }, Cmd.none )
+    ( { route = (parseLocation location), error = "", query = "", results = Nothing, graph = [] }, Cmd.none )
