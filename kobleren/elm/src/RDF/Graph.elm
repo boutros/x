@@ -1,46 +1,28 @@
-module RDF.Graph exposing (fromString, Graph)
+module RDF.Graph exposing (Graph)
 
-import RDF.RDF exposing (TriplePattern)
-import RDF.Parser exposing (parseTriples)
-import Parser
-
-
-fromString : String -> Result String (List TriplePattern)
-fromString ntriples =
-    case Parser.run (parseTriples ntriples) ntriples of
-        Err err ->
-            Result.Err (formatError err)
-
-        Ok triples ->
-            Result.Ok triples
-
-
-formatError : Parser.Error -> String
-formatError err =
-    let
-        position =
-            (toString err.row) ++ ":" ++ (toString err.col)
-
-        context =
-            case List.head err.context of
-                Nothing ->
-                    ""
-
-                Just topContext ->
-                    topContext.description
-    in
-        position
-            ++ ": parsing "
-            ++ context
-            ++ ": unexpected character: \""
-            ++ (String.slice (err.col - 1) (err.col + 1) err.source)
-            ++ "\""
+import RDF.RDF exposing (TriplePattern, Term)
+import RDF.Parser exposing (parseNTriples)
+import Dict
 
 
 type alias Graph =
-    List TriplePattern
+    { bnodeId : Int
+    , nodes : Dict.Dict String (Dict.Dict String (List Term))
+    }
+
+
+empty : Graph
+empty =
+    Graph 0 Dict.empty
 
 
 
--- TODO fromString : String -> Result (List TriplePattern)
--- with serialized error message
+--
+-- insert1 -> TriplePattern -> Graph
+-- delete1 -> TriplePattern -> Graph
+-- insert -> List TriplePattern -> Graph
+-- delete -> List TriplePattern -> Graph
+-- set/replace -> TriplePattern -> Graph
+-- fromTriples -> List TriplePattern -> Graph
+-- fromNTriples -> String -> Graph
+-- toNTriples -> Graph -> String

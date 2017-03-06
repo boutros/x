@@ -1,11 +1,6 @@
 module RDF.RDF exposing (..)
 
-
-type alias Literal =
-    { value : String
-    , language : Maybe String
-    , datatype : Term
-    }
+-- TYPES
 
 
 type Term
@@ -15,11 +10,50 @@ type Term
     | TermVar String
 
 
+type alias Literal =
+    { value : String
+    , language : Maybe String
+    , datatype : Term
+    }
+
+
 type alias TriplePattern =
     { subject : Term
     , predicate : Term
     , object : Term
     }
+
+
+
+-- FUNCTIONS
+
+
+serialize : Term -> String
+serialize term =
+    case term of
+        TermURI uri ->
+            "<" ++ uri ++ ">"
+
+        TermBlankNode id ->
+            "_:" ++ id
+
+        TermLiteral lit ->
+            case lit.language of
+                Just lang ->
+                    "\"" ++ lit.value ++ "\"@" ++ lang
+
+                Nothing ->
+                    if lit.datatype == xsdString then
+                        "\"" ++ lit.value ++ "\""
+                    else
+                        "\"" ++ lit.value ++ "\"^^" ++ serialize lit.datatype
+
+        TermVar var ->
+            "?" ++ var
+
+
+
+-- USEFULL URI CONSTANTS
 
 
 xsdString =
