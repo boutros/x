@@ -20,17 +20,17 @@ empty =
     Graph 0 Dict.empty Dict.empty Dict.empty
 
 
-insert : Graph -> TriplePattern -> Graph
-insert graph triple =
+insert1 : TriplePattern -> Graph -> Graph
+insert1 triple g0 =
     let
         ( s, g1 ) =
-            insertTerm triple.subject graph
+            insertTerm triple.subject g0
 
         ( p, g2 ) =
             insertTerm triple.predicate g1
 
         ( o, g3 ) =
-            insertTerm triple.predicate g2
+            insertTerm triple.object g2
     in
         indexTriple ( s, p, o ) g3
 
@@ -68,7 +68,7 @@ indexTriple ( s, p, o ) graph =
         newO =
             Set.insert o oldO
     in
-        { graph | spo = Dict.insert ( s, p ) newO }
+        { graph | spo = Dict.insert ( s, p ) newO graph.spo }
 
 
 fromNTriples : String -> Result String Graph
@@ -83,18 +83,57 @@ fromNTriples nt =
 
 fromTriples : List TriplePattern -> Graph
 fromTriples triples =
-    empty
+    List.foldr insert1 empty triples
 
 
 toNTriples : Graph -> String
 toNTriples graph =
-    "TODO"
+    Dict.toList graph.spo
+        |> List.map
+            (\( ( s, p ), o ) ->
+                let
+                    sp =
+                        mustSerialize s graph.id2term
+                            ++ " "
+                            ++ mustSerialize p graph.id2term
+                            ++ " "
+
+                    olist =
+                        Set.toList o
+
+                    all =
+                        \l ->
+                            case l of
+                                [] ->
+                                    Debug.crash "BUG: empty object list in SPO index"
+
+                                [ o1 ] ->
+                                    sp ++ mustSerialize o1 graph.id2term ++ " .\n"
+
+                                o1 :: rest ->
+                                    sp ++ mustSerialize o1 graph.id2term ++ " .\n" ++ all rest
+                in
+                    all
+                        olist
+            )
+        |> List.foldr (++) ""
+
+
+mustSerialize : Int -> Dict.Dict Int String -> String
+mustSerialize id terms =
+    case Dict.get id terms of
+        Nothing ->
+            Debug.crash "BUG: term ID in index but not in dictionary"
+
+        Just s ->
+            s
 
 
 
 --maybeToList : Maybe a -> List b
 
 
+maybeToSet : Maybe (Set.Set Int) -> Set.Set Int
 maybeToSet m =
     case m of
         Nothing ->
@@ -102,17 +141,6 @@ maybeToSet m =
 
         Just x ->
             x
-
-
-
---addIfNotPresent : a -> List a -> List a
-
-
-addIfNotPresent a list =
-    if (List.member a list) then
-        list
-    else
-        a :: list
 
 
 
