@@ -4,10 +4,21 @@ import Test exposing (..)
 import Expect
 import RDF.RDF exposing (..)
 import RDF.Graph as Graph
+import RDF.Parser exposing (parseNTriples)
 
 
-mustParse : String -> Graph.Graph
-mustParse ntriples =
+mustParseTriples : String -> List TriplePattern
+mustParseTriples nt =
+    case parseNTriples nt of
+        Err _ ->
+            []
+
+        Ok triples ->
+            triples
+
+
+mustParseGraph : String -> Graph.Graph
+mustParseGraph ntriples =
     case Graph.fromNTriples ntriples of
         Err err ->
             let
@@ -46,8 +57,35 @@ graph =
                     in
                         Expect.equalLists
                             (sortLines nt)
-                            (sortLines (Graph.toNTriples (mustParse nt)))
+                            (sortLines (Graph.toNTriples (mustParseGraph nt)))
             ]
         , describe "create and manipulate"
             []
+        , describe "querying"
+            [ test "one triple pattern" <|
+                \_ ->
+                    let
+                        nt =
+                            """
+                                <s> <p> <o> .
+                                <s> <p> <o2> .
+                                <s> <p2> <o3> .
+                            """
+
+                        graph =
+                            (mustParseGraph nt)
+                    in
+                        Expect.equalLists
+                            (Graph.query
+                                -- TODO: (mustParseTriples "<s> <p> ?o .")
+                                [ (TriplePattern
+                                    (TermURI "s")
+                                    (TermURI "p")
+                                    (TermVar "o")
+                                  )
+                                ]
+                                graph
+                            )
+                            (mustParseTriples "<s> <p> <o> .\n <s> <p> <o2> .")
+            ]
         ]
