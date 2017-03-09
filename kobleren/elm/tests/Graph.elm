@@ -20,6 +20,15 @@ mustParse ntriples =
             graph
 
 
+sortLines : String -> List String
+sortLines s =
+    s
+        |> String.split "\n"
+        |> List.map String.trim
+        |> List.filter (not << String.isEmpty)
+        |> List.sort
+
+
 graph : Test
 graph =
     describe "Graph"
@@ -28,9 +37,16 @@ graph =
                 \_ ->
                     let
                         nt =
-                            "<a> <b> <c> .\n"
+                            """
+                            <a> <b> <c> .
+                            <s> <p> "o" .
+                            <s2> <p> "xyz"@en .
+                            <s3> <p2> "123"^^<http://data/mytype> .
+                            """
                     in
-                        Expect.equal nt (Graph.toNTriples (mustParse nt))
+                        Expect.equalLists
+                            (sortLines nt)
+                            (sortLines (Graph.toNTriples (mustParse nt)))
             ]
         , describe "create and manipulate"
             []
