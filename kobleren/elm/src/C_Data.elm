@@ -50,4 +50,4 @@ decodeSearchHit =
 
 
 decodeResource resource =
-    Graph.fromString resource
+    Graph.fromNTriples resource

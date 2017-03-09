@@ -2,7 +2,7 @@ module A_Model exposing (Model)
 
 import B_Message exposing (Route)
 import C_Data as Data
-import RDF.RDF as RDF
+import RDF.Graph exposing (Graph)
 
 
 type alias Model =
@@ -10,5 +10,5 @@ type alias Model =
     , error : String
     , query : String
     , results : Maybe Data.SearchResults
-    , graph : List RDF.TriplePattern
+    , graph : Graph
     }

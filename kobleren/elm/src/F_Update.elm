@@ -14,15 +14,15 @@ update msg model =
     case msg of
         Search query ->
             if (String.trim query) == "" then
-                ( Model HomeRoute "" "" Nothing [], Cmd.none )
+                ( Model HomeRoute "" "" Nothing Graph.empty, Cmd.none )
             else
                 ( { model | query = query }, Command.doSearch query 0 )
 
         GetResults (Ok newResults) ->
-            ( Model HomeRoute "" model.query (Just newResults) [], Cmd.none )
+            ( Model HomeRoute "" model.query (Just newResults) Graph.empty, Cmd.none )
 
         GetResults (Err err) ->
-            ( Model HomeRoute (stringFromHttpError err) "" Nothing [], Cmd.none )
+            ( Model HomeRoute (stringFromHttpError err) "" Nothing Graph.empty, Cmd.none )
 
         Paginate offset ->
             ( model, Command.doSearch model.query offset )
@@ -34,12 +34,12 @@ update msg model =
             ( { model | error = (stringFromHttpError err) }, Cmd.none )
 
         GetResource (Ok resource) ->
-            case Graph.fromString resource of
+            case Graph.fromNTriples resource of
                 Err err ->
                     ( { model | error = err }, Cmd.none )
 
-                Ok triples ->
-                    ( { model | graph = triples }, Cmd.none )
+                Ok graph ->
+                    ( { model | graph = graph }, Cmd.none )
 
         NavigateTo url ->
             ( model, Navigation.newUrl url )
