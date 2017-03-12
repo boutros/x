@@ -29,6 +29,7 @@ parseObject =
             [ parseURI
             , parseLiteral
             , parseBlankNode
+            , parseVar
             ]
 
 
@@ -38,13 +39,17 @@ parseSubject =
         oneOf
             [ parseURI
             , parseBlankNode
+            , parseVar
             ]
 
 
 parsePredicate : Parser Term
 parsePredicate =
     inContext "predicate" <|
-        parseURI
+        oneOf
+            [ parseURI
+            , parseVar
+            ]
 
 
 parseBlankNode : Parser Term
@@ -62,6 +67,14 @@ parseURI =
             |. symbol "<"
             |= uriString
             |. symbol ">"
+
+
+parseVar : Parser Term
+parseVar =
+    inContext "variable" <|
+        succeed TermVar
+            |. keyword "?"
+            |= variableString
 
 
 parseLiteral : Parser Term
@@ -132,6 +145,12 @@ parseAnyLiteral =
 
 blankNodeString : Parser String
 blankNodeString =
+    mapWithSource always <|
+        ignoreWhile (\char -> char /= ' ')
+
+
+variableString : Parser String
+variableString =
     mapWithSource always <|
         ignoreWhile (\char -> char /= ' ')
 

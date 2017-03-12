@@ -12,9 +12,7 @@ import List
 
 type alias Graph =
     { bnodeId : Int
-    , term2id : Dict.Dict String Int
-    , id2term : Dict.Dict Int String
-    , spo : Dict.Dict ( Int, Int ) (Set.Set Int)
+    , triples : List TriplePattern
     }
 
 
@@ -26,7 +24,7 @@ type alias Graph =
 -}
 empty : Graph
 empty =
-    Graph 0 Dict.empty Dict.empty Dict.empty
+    Graph 0 []
 
 
 {-| Parse NTriples into a graph.
@@ -45,35 +43,16 @@ fromNTriples nt =
 -}
 toNTriples : Graph -> String
 toNTriples graph =
-    Dict.toList graph.spo
-        |> List.map
-            (\( ( s, p ), o ) ->
-                let
-                    sp =
-                        mustSerialize s graph.id2term
-                            ++ " "
-                            ++ mustSerialize p graph.id2term
-                            ++ " "
-
-                    olist =
-                        Set.toList o
-
-                    -- TODO refactor this mess
-                    all =
-                        \l ->
-                            case l of
-                                [] ->
-                                    Debug.crash "BUG: empty object list in SPO index"
-
-                                [ o1 ] ->
-                                    sp ++ mustSerialize o1 graph.id2term ++ " .\n"
-
-                                o1 :: rest ->
-                                    sp ++ mustSerialize o1 graph.id2term ++ " .\n" ++ all rest
-                in
-                    all
-                        olist
-            )
+    List.map
+        (\triple ->
+            serialize triple.subject
+                ++ " "
+                ++ serialize triple.predicate
+                ++ " "
+                ++ serialize triple.object
+                ++ " .\n"
+        )
+        graph.triples
         |> List.foldr (++) ""
 
 
@@ -90,49 +69,31 @@ query patterns graph =
 
 match : TriplePattern -> Graph -> List TriplePattern
 match pattern graph =
-    List.map (\ids -> tripleFromIds ids graph) (matchAll graph)
+    List.filter (tripleMatch pattern) graph.triples
 
 
-matchAll : Graph -> List ( Int, Int, Int )
-matchAll graph =
-    Dict.toList graph.spo
-        |> List.concatMap
-            (\( ( s, p ), objs ) ->
-                List.map (\o -> ( s, p, o )) (Set.toList objs)
-            )
+tripleMatch : TriplePattern -> TriplePattern -> Bool
+tripleMatch hasTriple qTriple =
+    (termMatch hasTriple.subject qTriple.subject)
+        && (termMatch hasTriple.predicate qTriple.predicate)
+        && (termMatch hasTriple.object qTriple.object)
 
 
-tripleFromIds : ( Int, Int, Int ) -> Graph -> TriplePattern
-tripleFromIds ( s, p, o ) graph =
-    TriplePattern (termFromId s graph) (termFromId p graph) (termFromId o graph)
+termMatch : Term -> Term -> Bool
+termMatch a b =
+    case a of
+        TermVar _ ->
+            True
 
+        TermURI uri ->
+            (TermURI uri) == b
 
-termFromId : Int -> Graph -> Term
-termFromId id graph =
-    case Dict.get id graph.id2term of
-        Nothing ->
-            Debug.crash "BUG: term ID in index but not in dictionary"
+        TermLiteral lit ->
+            (TermLiteral lit) == b
 
-        Just s ->
-            termFromString s
-
-
-termFromString : String -> Term
-termFromString s =
-    case (String.slice 0 1 s) of
-        "<" ->
-            TermURI (String.slice 1 -1 s)
-
-        "_" ->
-            TermBlankNode (String.dropLeft 2 s)
-
-        _ ->
-            TermLiteral (literalFromString s)
-
-
-literalFromString : String -> Literal
-literalFromString s =
-    Literal s Nothing xsdString
+        --TODO
+        TermBlankNode _ ->
+            True
 
 
 
@@ -140,54 +101,11 @@ literalFromString s =
 
 
 insert1 : TriplePattern -> Graph -> Graph
-insert1 triple g0 =
-    let
-        ( s, g1 ) =
-            insertTerm triple.subject g0
-
-        ( p, g2 ) =
-            insertTerm triple.predicate g1
-
-        ( o, g3 ) =
-            insertTerm triple.object g2
-    in
-        indexTriple ( s, p, o ) g3
-
-
-insertTerm : Term -> Graph -> ( Int, Graph )
-insertTerm term graph =
-    let
-        t =
-            serialize term
-    in
-        case Dict.get t graph.term2id of
-            Just id ->
-                ( id, graph )
-
-            Nothing ->
-                let
-                    id =
-                        Dict.size graph.term2id + 1
-
-                    term2id =
-                        Dict.insert t id graph.term2id
-
-                    id2term =
-                        Dict.insert id t graph.id2term
-                in
-                    ( id, { graph | id2term = id2term, term2id = term2id } )
-
-
-indexTriple : ( Int, Int, Int ) -> Graph -> Graph
-indexTriple ( s, p, o ) graph =
-    let
-        oldO =
-            maybeToSet (Dict.get ( s, p ) graph.spo)
-
-        newO =
-            Set.insert o oldO
-    in
-        { graph | spo = Dict.insert ( s, p ) newO graph.spo }
+insert1 triple graph =
+    if (List.member triple graph.triples) then
+        graph
+    else
+        { graph | triples = triple :: graph.triples }
 
 
 
@@ -197,34 +115,6 @@ indexTriple ( s, p, o ) graph =
 fromTriples : List TriplePattern -> Graph
 fromTriples triples =
     List.foldr insert1 empty triples
-
-
-
--- ENCODING HELPER FUNCTIONS
-
-
-mustSerialize : Int -> Dict.Dict Int String -> String
-mustSerialize id terms =
-    case Dict.get id terms of
-        Nothing ->
-            Debug.crash "BUG: term ID in index but not in dictionary"
-
-        Just s ->
-            s
-
-
-
--- OTHER HELPER FUNCTIONS
-
-
-maybeToSet : Maybe (Set.Set Int) -> Set.Set Int
-maybeToSet m =
-    case m of
-        Nothing ->
-            Set.empty
-
-        Just x ->
-            x
 
 
 

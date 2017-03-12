@@ -74,6 +74,14 @@ ntriples =
                             (TermURI "b")
                             (TermLiteral <| Literal "99" Nothing xsdInteger)
                         ]
+            , test "Query variables" <|
+                \_ ->
+                    Expect.equalLists (mustOk "?s ?pred ?obj .")
+                        [ TriplePattern
+                            (TermVar "s")
+                            (TermVar "pred")
+                            (TermVar "obj")
+                        ]
             , test "Multiple statements" <|
                 \_ ->
                     Expect.equalLists
