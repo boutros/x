@@ -1,4 +1,4 @@
-module F_Update exposing (update, parseLocation)
+module F_Update exposing (update, parseLocation, routeAction)
 
 import A_Model exposing (Model)
 import B_Message exposing (..)
@@ -11,7 +11,7 @@ import Vendor.UrlParser exposing (..)
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
+    case Debug.log "msg" msg of
         Search query ->
             if (String.trim query) == "" then
                 ( Model HomeRoute "" "" Nothing Graph.empty, Cmd.none )

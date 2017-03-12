@@ -2,13 +2,20 @@ module Views.Inputs exposing (..)
 
 import Html exposing (Html, div, text, input, label, textarea, datalist, option)
 import Html.Attributes exposing (class, value, type_, maxlength, style, rows, list, id)
+import A_Model exposing (..)
 import B_Message exposing (..)
 import RDF.RDF as RDF
 
 
-singleString : List RDF.TriplePattern -> String -> Html Msg
-singleString patterns inputLabel =
-    inputWrap inputLabel (input [ type_ "text" ] [])
+singleString : Model -> List RDF.TriplePattern -> String -> Html Msg
+singleString model patterns inputLabel =
+    inputWrap inputLabel
+        (input
+            [ type_ "text"
+            , value (valueFromGraph model patterns)
+            ]
+            []
+        )
 
 
 singleText : String -> Int -> Html Msg
@@ -16,11 +23,12 @@ singleText inputLabel numLines =
     inputWrap inputLabel (textarea [ rows numLines ] [])
 
 
-singleNumber : List RDF.TriplePattern -> String -> Int -> Html Msg
-singleNumber patterns inputLabel length =
+singleNumber : Model -> List RDF.TriplePattern -> String -> Int -> Html Msg
+singleNumber model patterns inputLabel length =
     inputWrap inputLabel
         (input
             [ type_ "text"
+            , value (valueFromGraph model patterns)
             , maxlength length
             , style
                 [ ( "width", (toString length) ++ "em" )

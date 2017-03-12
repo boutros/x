@@ -26,14 +26,14 @@ view model uri =
                 [ div
                     [ class "resource-edit" ]
                     [ fieldset []
-                        [ (Inputs.singleString (Query.matchOne subject Ontology.name) "Navn")
-                        , (Inputs.singleNumber (Query.matchOne subject Ontology.birthYear) "Fødselsår" 4)
-                        , (Inputs.singleNumber (Query.matchOne subject Ontology.deathYear) "Dødsår" 4)
+                        [ (Inputs.singleString model (Query.matchOne subject Ontology.name) "Navn")
+                        , (Inputs.singleNumber model (Query.matchOne subject Ontology.birthYear) "Fødselsår" 4)
+                        , (Inputs.singleNumber model (Query.matchOne subject Ontology.deathYear) "Dødsår" 4)
                         , (Inputs.singleSearchSelect "Nasjonalitet" [ "Norge", "Sverige", "Danmark", "Senegal" ])
-                        , (Inputs.singleString [] "Kjønn")
+                        , (Inputs.singleString model [] "Kjønn")
                         , (Inputs.singleText "Forklarende tilføyelse" 3)
-                        , (Inputs.singleString [] "Alternativt navn")
-                        , (Inputs.singleNumber (Query.matchOne subject Ontology.number) "Nummer" 4)
+                        , (Inputs.singleString model [] "Alternativt navn")
+                        , (Inputs.singleNumber model (Query.matchOne subject Ontology.number) "Nummer" 4)
                         ]
                     ]
                 ]

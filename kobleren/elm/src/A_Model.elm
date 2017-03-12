@@ -1,8 +1,9 @@
-module A_Model exposing (Model)
+module A_Model exposing (Model, valueFromGraph)
 
 import B_Message exposing (Route)
 import C_Data as Data
-import RDF.Graph exposing (Graph)
+import RDF.RDF as RDF
+import RDF.Graph as Graph
 
 
 type alias Model =
@@ -10,5 +11,36 @@ type alias Model =
     , error : String
     , query : String
     , results : Maybe Data.SearchResults
-    , graph : Graph
+    , graph : Graph.Graph
     }
+
+
+valueFromGraph : Model -> List RDF.TriplePattern -> String
+valueFromGraph model patterns =
+    let
+        triples =
+            Graph.query patterns model.graph
+    in
+        case triples of
+            [] ->
+                ""
+
+            [ triple ] ->
+                valueFromObject triple.object
+
+            triple :: rest ->
+                Debug.crash "expected one value, found several"
+
+
+valueFromObject : RDF.Term -> String
+valueFromObject obj =
+    case obj of
+        RDF.TermLiteral l ->
+            l.value
+
+        _ ->
+            ""
+
+
+
+-- valuesFromGraph -> List RDF.TriplePattern -> Model -> List String
