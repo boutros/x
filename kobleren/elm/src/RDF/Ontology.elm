@@ -3,17 +3,26 @@ module RDF.Ontology exposing (..)
 import RDF.RDF exposing (..)
 
 
+ontology : String -> String
+ontology path =
+    "http://data.deichman.no/ontology#" ++ path
+
+
 name =
-    (TermURI "http://data.deichman.no/ontology#name")
+    (TermURI (ontology "name"))
 
 
 birthYear =
-    (TermURI "http://data.deichman.no/ontology#birthYear")
+    (TermURI (ontology "birthYear"))
 
 
 deathYear =
-    (TermURI "http://data.deichman.no/ontology#deathYear")
+    (TermURI (ontology "deathYear"))
 
 
 number =
-    (TermURI "http://data.deichman.no/ontology#number")
+    (TermURI (ontology "number"))
+
+
+nationality =
+    (TermURI (ontology "nationality"))

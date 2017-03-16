@@ -58,6 +58,7 @@ const h26452400 = `<http://data.deichman.no/person/h26452400> <http://www.w3.org
 <http://data.deichman.no/person/h26452400> <http://data.deichman.no/ontology#birthYear> "1901"^^<http://www.w3.org/2001/XMLSchema#gYear> .
 <http://data.deichman.no/person/h26452400> <http://data.deichman.no/ontology#name> "Grahl-Nielsen, Thora" .
 <http://data.deichman.no/person/h26452400> <http://data.deichman.no/ontology#nationality> <http://data.deichman.no/nationality#n> .
+<http://data.deichman.no/person/h26452400> <http://data.deichman.no/ontology#nationality> <http://data.deichman.no/nationality#afg> .
 <http://data.deichman.no/person/h26452400> <http://data.deichman.no/raw#lifeSpan> "1901-" .
 <http://data.deichman.no/nationality#n> <http://www.w3.org/2000/01/rdf-schema#label> "Norway"@en .
 <http://data.deichman.no/nationality#n> <http://www.w3.org/2000/01/rdf-schema#label> "Norge"@no .

@@ -29,7 +29,12 @@ view model uri =
                         [ (Inputs.singleString model (Query.matchOne subject Ontology.name) "Navn")
                         , (Inputs.singleNumber model (Query.matchOne subject Ontology.birthYear) "Fødselsår" 4)
                         , (Inputs.singleNumber model (Query.matchOne subject Ontology.deathYear) "Dødsår" 4)
-                        , (Inputs.singleSearchSelect "Nasjonalitet" [ "Norge", "Sverige", "Danmark", "Senegal" ])
+                        , (Inputs.multiSearchSelect
+                            model
+                            (Query.matchOne subject Ontology.nationality)
+                            "Nasjonalitet"
+                            Nationality
+                          )
                         , (Inputs.singleString model [] "Kjønn")
                         , (Inputs.singleText "Forklarende tilføyelse" 3)
                         , (Inputs.singleString model [] "Alternativt navn")

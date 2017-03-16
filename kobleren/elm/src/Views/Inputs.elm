@@ -1,6 +1,6 @@
 module Views.Inputs exposing (..)
 
-import Html exposing (Html, div, text, input, label, textarea, datalist, option)
+import Html exposing (Html, div, text, input, label, textarea, datalist, option, span)
 import Html.Attributes exposing (class, value, type_, maxlength, style, rows, list, id)
 import A_Model exposing (..)
 import B_Message exposing (..)
@@ -38,19 +38,32 @@ singleNumber model patterns inputLabel length =
         )
 
 
-singleSearchSelect : String -> List String -> Html Msg
-singleSearchSelect inputLabel options =
-    inputWrap inputLabel
-        (div []
-            [ input
-                [ type_ "text"
-                , list inputLabel
+multiSearchSelect : Model -> List RDF.TriplePattern -> String -> Authority -> Html Msg
+multiSearchSelect model patterns inputLabel authority =
+    let
+        values =
+            (valuesFromGraph model patterns)
+    in
+        inputWrap inputLabel
+            (div []
+                [ input
+                    [ type_ "text"
+                    , list inputLabel
+                    ]
+                    []
+                , div [ class "input-values" ] (List.map (\v -> inputValue v authority) values)
+                , datalist [ id inputLabel ]
+                    (List.map (\( uri, label_ ) -> option [ id uri ] [ text label_ ]) (allValuesFor authority))
                 ]
-                []
-            , datalist [ id inputLabel ]
-                (List.map (\o -> option [] [ text o ]) options)
-            ]
-        )
+            )
+
+
+inputValue : String -> Authority -> Html Msg
+inputValue v authority =
+    div []
+        [ span [ class "input-values-delete" ] [ text "×" ]
+        , text (labelFor v authority)
+        ]
 
 
 inputWrap : String -> Html Msg -> Html Msg
