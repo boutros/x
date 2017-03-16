@@ -145,27 +145,27 @@ parseAnyLiteral =
 
 blankNodeString : Parser String
 blankNodeString =
-    mapWithSource always <|
-        ignoreWhile (\char -> char /= ' ')
+    sourceMap always <|
+        ignore zeroOrMore (\char -> char /= ' ')
 
 
 variableString : Parser String
 variableString =
-    mapWithSource always <|
-        ignoreWhile (\char -> char /= ' ')
+    sourceMap always <|
+        ignore zeroOrMore (\char -> char /= ' ')
 
 
 uriString : Parser String
 uriString =
-    mapWithSource always <|
+    sourceMap always <|
         --illegal URI characters: /[\x00-\x20<>\\"\{\}\|\^\`]/
-        ignoreWhile (\char -> char /= '>')
+        ignore zeroOrMore (\char -> char /= '>')
 
 
 literalString : Parser String
 literalString =
-    mapWithSource always <|
-        ignoreWhile (\char -> char /= '"' && char /= '\n')
+    sourceMap always <|
+        ignore zeroOrMore (\char -> char /= '"' && char /= '\n')
 
 
 parseLangTag : Parser (Maybe String)
@@ -176,24 +176,24 @@ parseLangTag =
 
 langString : Parser String
 langString =
-    mapWithSource always <|
-        ignoreWhile (\char -> char /= ' ' && char /= '.')
+    sourceMap always <|
+        ignore zeroOrMore (\char -> char /= ' ' && char /= '.')
 
 
 whitespace : Parser ()
 whitespace =
-    ignoreWhile (\char -> char == ' ' || char == '\t')
+    ignore zeroOrMore (\char -> char == ' ' || char == '\t')
 
 
 whitespaceIncNewline : Parser ()
 whitespaceIncNewline =
-    ignoreWhile (\char -> char == ' ' || char == '\t' || char == '\n')
+    ignore zeroOrMore (\char -> char == ' ' || char == '\t' || char == '\n')
 
 
 parseTriples : String -> Parser (List TriplePattern)
 parseTriples ntriples =
     succeed identity
-        |= zeroOrMore parseTriple
+        |= repeat zeroOrMore parseTriple
 
 
 parseNTriples : String -> Result String (List TriplePattern)
