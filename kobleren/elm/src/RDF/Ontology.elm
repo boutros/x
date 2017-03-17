@@ -26,3 +26,19 @@ number =
 
 nationality =
     (TermURI (ontology "nationality"))
+
+
+subdivision =
+    (TermURI (ontology "subdivision"))
+
+
+specification =
+    (TermURI (ontology "specification"))
+
+
+altLabel =
+    (TermURI (ontology "altLabel"))
+
+
+place =
+    (TermURI (ontology "place"))

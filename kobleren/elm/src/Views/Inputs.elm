@@ -18,6 +18,20 @@ singleString model patterns inputLabel =
         )
 
 
+multiString : Model -> List RDF.TriplePattern -> String -> Html Msg
+multiString model patterns inputLabel =
+    inputWrap inputLabel
+        (div []
+            [ input
+                [ type_ "text"
+                , value (valueFromGraph model patterns)
+                ]
+                []
+            , div [] [ text "TODO more" ]
+            ]
+        )
+
+
 singleText : String -> Int -> Html Msg
 singleText inputLabel numLines =
     inputWrap inputLabel (textarea [ rows numLines ] [])

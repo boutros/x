@@ -53,7 +53,8 @@ const queryTemplate = `{
   }
 }`
 
-const h26452400 = `<http://data.deichman.no/person/h26452400> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.deichman.no/ontology#Person> .
+var resources = map[string]string{
+	"/person/h26452400": `<http://data.deichman.no/person/h26452400> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.deichman.no/ontology#Person> .
 <http://data.deichman.no/person/h26452400> <http://data.deichman.no/duo#bibliofilAuthorityId> "26452400" .
 <http://data.deichman.no/person/h26452400> <http://data.deichman.no/ontology#birthYear> "1901"^^<http://www.w3.org/2001/XMLSchema#gYear> .
 <http://data.deichman.no/person/h26452400> <http://data.deichman.no/ontology#name> "Grahl-Nielsen, Thora" .
@@ -62,9 +63,8 @@ const h26452400 = `<http://data.deichman.no/person/h26452400> <http://www.w3.org
 <http://data.deichman.no/person/h26452400> <http://data.deichman.no/raw#lifeSpan> "1901-" .
 <http://data.deichman.no/nationality#n> <http://www.w3.org/2000/01/rdf-schema#label> "Norway"@en .
 <http://data.deichman.no/nationality#n> <http://www.w3.org/2000/01/rdf-schema#label> "Norge"@no .
-<http://data.deichman.no/nationality#n> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.deichman.no/utility#Nationality> .`
-
-const h12276900 = `<http://data.deichman.no/nationality#n> <http://www.w3.org/2000/01/rdf-schema#label> "Norway"@en .
+<http://data.deichman.no/nationality#n> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.deichman.no/utility#Nationality> .`,
+	"/person/h12276900": `<http://data.deichman.no/nationality#n> <http://www.w3.org/2000/01/rdf-schema#label> "Norway"@en .
 <http://data.deichman.no/nationality#n> <http://www.w3.org/2000/01/rdf-schema#label> "Norge"@no .
 <http://data.deichman.no/nationality#n> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.deichman.no/utility#Nationality> .
 <http://data.deichman.no/person/h12276900> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.deichman.no/ontology#Person> .
@@ -73,7 +73,19 @@ const h12276900 = `<http://data.deichman.no/nationality#n> <http://www.w3.org/20
 <http://data.deichman.no/person/h12276900> <http://data.deichman.no/ontology#deathYear> "1952"^^<http://www.w3.org/2001/XMLSchema#gYear> .
 <http://data.deichman.no/person/h12276900> <http://data.deichman.no/ontology#name> "Hamsun, Knut" .
 <http://data.deichman.no/person/h12276900> <http://data.deichman.no/ontology#nationality> <http://data.deichman.no/nationality#n> .
-<http://data.deichman.no/person/h12276900> <http://data.deichman.no/raw#lifeSpan> "1859-1952" .`
+<http://data.deichman.no/person/h12276900> <http://data.deichman.no/raw#lifeSpan> "1859-1952" .`,
+	"/corporation/c31281400": `<http://data.deichman.no/corporation/c31281400> <http://data.deichman.no/ontology#specification> "Electronicagruppe" .
+<http://data.deichman.no/corporation/c31281400> <http://data.deichman.no/ontology#name> "Boards of Canada" .
+<http://data.deichman.no/corporation/c31281400> <http://data.deichman.no/duo#bibliofilAuthorityId> "31281400" .
+<http://data.deichman.no/corporation/c31281400> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.deichman.no/ontology#Corporation> .`,
+	"/corporation/c968919785635": `<http://data.deichman.no/corporation/c968919785635> <http://data.deichman.no/ontology#specification> "forlag" .
+<http://data.deichman.no/corporation/c968919785635> <http://data.deichman.no/ontology#name> "Rough Guides" .
+<http://data.deichman.no/corporation/c968919785635> <http://data.deichman.no/ontology#altLabel> "Røffgaidajn" .
+<http://data.deichman.no/corporation/c968919785635> <http://data.deichman.no/ontology#altLabel> "Ned med låonli plænet!" .
+<http://data.deichman.no/corporation/c968919785635> <http://data.deichman.no/ontology#modified> "2016-12-13T11:13:48.785Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://data.deichman.no/corporation/c968919785635> <http://data.deichman.no/ontology#created> "2016-12-13T11:13:48.634Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<http://data.deichman.no/corporation/c968919785635> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://data.deichman.no/ontology#Corporation> .`,
+}
 
 type searchResults struct {
 	Offset    int
@@ -691,26 +703,18 @@ func main() {
 
 	})
 
-	http.HandleFunc("/person/h26452400", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 
 		if r.Method == "GET" {
-			w.Header().Set("Content-Type", "application/n-triples")
-			if _, err := w.Write([]byte(h26452400)); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+			path := r.URL.Path
+			res, ok := resources[path]
+			if !ok {
+				http.Error(w, "not found", http.StatusNotFound)
 				return
 			}
-		}
-		if r.Method != "PATCH" {
-			http.Error(w, "not allowed", http.StatusMethodNotAllowed)
-		}
-	})
-
-	http.HandleFunc("/person/h12276900", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		if r.Method == "GET" {
 			w.Header().Set("Content-Type", "application/n-triples")
-			if _, err := w.Write([]byte(h12276900)); err != nil {
+			if _, err := w.Write([]byte(res)); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}

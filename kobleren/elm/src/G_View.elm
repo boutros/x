@@ -5,6 +5,7 @@ import A_Model exposing (..)
 import B_Message exposing (..)
 import Views.Home as Home
 import Views.Authority.Person as Person
+import Views.Authority.Corporation as Corporation
 
 
 view : Model -> Html Msg
@@ -20,7 +21,15 @@ page model =
             Home.view model
 
         EditAuthorityRoute uri type_ ->
-            Person.view model uri
+            case type_ of
+                "person" ->
+                    Person.view model uri
+
+                "korporasjon" ->
+                    Corporation.view model uri
+
+                _ ->
+                    notFoundView model
 
         NotFoundRoute ->
             notFoundView model
